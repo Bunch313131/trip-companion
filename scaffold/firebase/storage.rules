@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Storage bucket rules — trip-scoped reservation documents.
+// Path pattern: reservations/{tripId}/{reservationId}/{filename}
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function tripMemberIds(tripId) {
+      return firestore.get(/databases/(default)/documents/trips/$(tripId)).data.memberIds;
+    }
+
+    function isMember(tripId) {
+      return signedIn() && request.auth.uid in tripMemberIds(tripId);
+    }
+
+    function memberRole(tripId) {
+      return firestore.get(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role;
+    }
+
+    function isEditor(tripId) {
+      return isMember(tripId) && memberRole(tripId) in ['owner', 'editor'];
+    }
+
+    // ─── Reservation documents ────────────────────────────────────
+    match /reservations/{tripId}/{allPaths=**} {
+      allow read: if isMember(tripId);
+      allow write: if isEditor(tripId)
+                   && request.resource.size < 20 * 1024 * 1024   // 20MB cap
+                   && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+  }
+}

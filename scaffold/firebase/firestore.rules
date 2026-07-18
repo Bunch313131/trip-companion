@@ -1,0 +1,75 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════
+// Trip Companion — Firestore security rules
+// Deploy with `firebase deploy --only firestore:rules`
+// ═══════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ──────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function tripData(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)).data;
+    }
+
+    function isMember(tripId) {
+      // O(1) via denormalized memberIds array on the trip doc
+      return signedIn() && request.auth.uid in tripData(tripId).memberIds;
+    }
+
+    function memberRole(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role;
+    }
+
+    function isEditor(tripId) {
+      return isMember(tripId) && memberRole(tripId) in ['owner', 'editor'];
+    }
+
+    function isOwner(tripId) {
+      return isMember(tripId) && memberRole(tripId) == 'owner';
+    }
+
+    // ─── Trips ────────────────────────────────────────────────────
+    match /trips/{tripId} {
+      allow read: if isMember(tripId);
+      allow create: if signedIn()
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isEditor(tripId);
+      allow delete: if isOwner(tripId);
+
+      // Members: readable by any member, writable only by owner
+      match /members/{userId} {
+        allow read: if isMember(tripId);
+        allow write: if isOwner(tripId);
+      }
+
+      // All other subcollections (stops, activities, reservations,
+      // proposals, chatMessages, notes, presence) — same membership rules
+      match /{subcoll}/{docId} {
+        allow read: if isMember(tripId);
+        allow create, update: if isEditor(tripId);
+        allow delete: if isEditor(tripId);
+      }
+    }
+
+    // ─── Invitations ──────────────────────────────────────────────
+    // Anyone with a token URL can read the invite (to see who invited them).
+    // Only the server (Admin SDK) writes invitations.
+    match /invitations/{token} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── userTrips (denormalized index) ───────────────────────────
+    // Users can read their own trip list. Only the server writes it.
+    match /userTrips/{userId}/{doc=**} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}
