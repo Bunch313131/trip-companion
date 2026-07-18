@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background:#E7E4DD; background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.045) 1px, transparent 0); background-size:26px 26px; font-family:'Inter',system-ui,sans-serif; }
+    @keyframes tcPulse { 0%{transform:scale(.6);opacity:.5} 100%{transform:scale(2.4);opacity:0} }
+  </style>
+</helmet>
+
+<div style="padding:56px 60px 90px; display:flex; flex-direction:column; gap:40px; width:max-content;">
+
+  <!-- Round header -->
+  <div style="max-width:720px;">
+    <div style="font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#8A8578; font-family:'JetBrains Mono',monospace;">Trip Companion · Round 1</div>
+    <div style="font-family:'Manrope',sans-serif; font-size:34px; font-weight:700; letter-spacing:-.02em; color:#1E2530; margin-top:8px;">Palette exploration</div>
+    <div style="font-size:15px; line-height:1.6; color:#514E46; margin-top:10px;">Today (pre-trip) and Chat with a proposal card, built against the real Europe 2026 trip data — shown in three color directions. Pick one and Round 2 fills in the rest. Reference an option by its id in chat, e.g. <a href="#1b" style="color:#1E4E80; font-weight:600; text-decoration:none;">1b</a>.</div>
+  </div>
+
+  <!-- TURN 1 -->
+  <section style="display:flex; gap:56px; align-items:flex-start;">
+
+    <!-- OPTION 1a — Confident Blue -->
+    <div id="1a" style="--ui:'Inter'; --display:'Manrope'; --mono:'JetBrains Mono'; --bg:#F1EEE7; --surface:#FFFFFF; --surface-2:#F4F1EA; --text:#17212C; --text-dim:#56626F; --text-mute:#8A93A0; --border:#E6E1D8; --primary:#1E4E80; --primary-ink:#FFFFFF; --primary-soft:#E7EFF6; --accent:#E0A43B; --confirmed:#2E7D5B; --confirmed-soft:#E3F1EA; --warning:#C25A3B; --warning-soft:#F8E9E2; display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; background:#1E2530; color:#fff; padding:4px 9px; border-radius:7px;">1a</span>
+        <div>
+          <div style="font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; color:#1E2530;">Confident Blue</div>
+          <div style="font-size:12.5px; color:#6A665C;">Traveled, trustworthy, calm · amber accent</div>
+        </div>
+        <div style="display:flex; gap:5px; margin-left:8px;">
+          <span style="width:18px; height:18px; border-radius:5px; background:#1E4E80;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#E0A43B;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#2E7D5B;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#F1EEE7; border:1px solid #dcd7cd;"></span>
+        </div>
+      </div>
+      <div style="display:flex; gap:28px;">
+        <dc-import name="TodayScreen" hint-size="390px,940px"></dc-import>
+        <dc-import name="ChatScreen" hint-size="390px,900px"></dc-import>
+      </div>
+    </div>
+
+    <!-- OPTION 1b — Coral / Terracotta -->
+    <div id="1b" style="--ui:'Inter'; --display:'Manrope'; --mono:'JetBrains Mono'; --bg:#FBF3EA; --surface:#FFFFFF; --surface-2:#FAF1E6; --text:#2A211C; --text-dim:#6B5D54; --text-mute:#A2958A; --border:#EFE3D4; --primary:#D06038; --primary-ink:#FFFFFF; --primary-soft:#FBE9DF; --accent:#2F5D50; --confirmed:#3E7A5E; --confirmed-soft:#E6F0EA; --warning:#C0492E; --warning-soft:#F8E3DA; display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; background:#1E2530; color:#fff; padding:4px 9px; border-radius:7px;">1b</span>
+        <div>
+          <div style="font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; color:#1E2530;">Warm Terracotta</div>
+          <div style="font-size:12.5px; color:#6A665C;">Warm, family-friendly · forest secondary</div>
+        </div>
+        <div style="display:flex; gap:5px; margin-left:8px;">
+          <span style="width:18px; height:18px; border-radius:5px; background:#D06038;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#2F5D50;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#3E7A5E;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#FBF3EA; border:1px solid #ece0d0;"></span>
+        </div>
+      </div>
+      <div style="display:flex; gap:28px;">
+        <dc-import name="TodayScreen" hint-size="390px,940px"></dc-import>
+        <dc-import name="ChatScreen" hint-size="390px,900px"></dc-import>
+      </div>
+    </div>
+
+    <!-- OPTION 1c — Sage / Forest -->
+    <div id="1c" style="--ui:'Inter'; --display:'Manrope'; --mono:'JetBrains Mono'; --bg:#F0F2EB; --surface:#FFFFFF; --surface-2:#F1F3EA; --text:#1E241C; --text-dim:#58604F; --text-mute:#8E9583; --border:#E0E3D6; --primary:#3C6B4A; --primary-ink:#FFFFFF; --primary-soft:#E6EFE6; --accent:#D68A2A; --confirmed:#3C6B4A; --confirmed-soft:#E6EFE6; --warning:#B75437; --warning-soft:#F4E4DC; display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; background:#1E2530; color:#fff; padding:4px 9px; border-radius:7px;">1c</span>
+        <div>
+          <div style="font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; color:#1E2530;">Alpine Sage</div>
+          <div style="font-size:12.5px; color:#6A665C;">Outdoors, calm, alpine · amber accent</div>
+        </div>
+        <div style="display:flex; gap:5px; margin-left:8px;">
+          <span style="width:18px; height:18px; border-radius:5px; background:#3C6B4A;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#D68A2A;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#B75437;"></span>
+          <span style="width:18px; height:18px; border-radius:5px; background:#F0F2EB; border:1px solid #dcdfd0;"></span>
+        </div>
+      </div>
+      <div style="display:flex; gap:28px;">
+        <dc-import name="TodayScreen" hint-size="390px,940px"></dc-import>
+        <dc-import name="ChatScreen" hint-size="390px,900px"></dc-import>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+</x-dc>
+</body>
+</html>

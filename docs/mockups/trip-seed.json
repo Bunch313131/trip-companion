@@ -1,0 +1,912 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$seed_version": "2026-07-18-v4",
+  "$comment": "Family Germany/France/Switzerland 2026 trip. 2 adults + twin 6-year-olds. Kid-friendly, Rick Steves-style pacing. v4: Colmar address confirmed (12 Rue de l'Ange), parking plan set (Saint-Josse). v3: flights + car + Linderhof booked.",
+
+  "trip": {
+    "name": "Europe Family Trip 2026",
+    "slug": "family-europe-2026",
+    "starts_on": "2026-07-24",
+    "ends_on": "2026-08-07",
+    "origin_iata": "SMF",
+    "return_iata": "SMF",
+    "status": "planning",
+    "description": "Fifteen-day family road trip: Germany → France → Switzerland → Bavaria. Two adults with 6-year-old twins. One rental car for the whole trip. Rick Steves-style pacing — big highlights, real downtime, no death marches.",
+    "travelers": {
+      "adults": 2,
+      "children": [
+        { "age": 6, "role": "twin" },
+        { "age": 6, "role": "twin" }
+      ]
+    },
+    "style_notes": [
+      "Kid-friendly pacing — mornings for anchors, afternoons for downtime.",
+      "Build in reset points: playgrounds, ice cream stops, hotel time.",
+      "One car kept the whole trip. Generally park it and don't move it.",
+      "Never over-schedule. Locked reservations first, then flexible time.",
+      "Rain / meltdown pivots pre-identified where possible."
+    ]
+  },
+
+  "stops": [
+    {
+      "order_idx": 1,
+      "city": "Duisburg",
+      "country": "DE",
+      "region": "Rhineland",
+      "arrive_on": "2026-07-25",
+      "depart_on": "2026-07-27",
+      "status": "confirmed",
+      "color": "#2F5C8A",
+      "lat": 51.4344,
+      "lng": 6.7623,
+      "notes": "Arrival & recovery. Jul 26 intentionally loose — jet lag buffer before the long drive to Colmar on the 27th. Not a sightseeing stop; expectations low.",
+      "lodging": {
+        "name": "Premier Inn Duisburg City Altstadt",
+        "address": "Oberstraße 2, 47051 Duisburg",
+        "status": "confirmed"
+      },
+      "parking": {
+        "primary": "Premier Inn onsite parking (~€15/night, chargeable, cannot be reserved)",
+        "backups": [
+          {
+            "name": "Tiefgarage Innenhafen",
+            "address": "Alter Markt 19, 47051 Duisburg",
+            "verify": "hours, overnight access, Sunday availability, rates"
+          },
+          {
+            "name": "Parkplatz Burgplatz",
+            "address": "Burgplatz 17, 47051 Duisburg",
+            "verify": "payment hours, overnight rules, availability"
+          }
+        ],
+        "instruction": "Arrive at Premier Inn and try onsite first. If full, use Innenhafen / Altstadt garages — don't circle for street parking."
+      }
+    },
+    {
+      "order_idx": 2,
+      "city": "Colmar",
+      "country": "FR",
+      "region": "Alsace",
+      "arrive_on": "2026-07-27",
+      "depart_on": "2026-07-30",
+      "status": "confirmed",
+      "color": "#6B8E3F",
+      "lat": 48.0794,
+      "lng": 7.3585,
+      "notes": "Half-timbered old town, Little Venice, canals. Three nights. Jul 28 is the slow reset day; Jul 29 is Haut-Koenigsbourg + Strasbourg. Parent wine reward while kids do ice cream + wandering.",
+      "lodging": {
+        "name": "Chez Miriam Cecile et Caroline",
+        "address": "12 Rue de l'Ange, 1er étage, 68000 Colmar, France",
+        "coordinates": { "lat": 48.0786, "lng": 7.3603 },
+        "status": "confirmed",
+        "notes": "Dead center of old town, ~2 blocks from cathedral. 1er étage = one flight up (US 2nd floor). VERIFY: elevator or stairs-only with luggage. VERIFY: Miriam's arrival-day check-in instructions (key handoff, contact number, arrival window)."
+      },
+      "parking": {
+        "primary": "Parking Saint-Josse (Rue Saint-Josse) — €3/day, first hour free, 24/7, 5-min walk. Recommended for 3-night stay (~€9 total).",
+        "backups": [
+          {
+            "name": "Parking Rapp",
+            "address": "Rue Rapp, 68000 Colmar",
+            "note": "Free after 7pm and Sundays. ~5-10 min walk. Daytime often full."
+          },
+          {
+            "name": "Parking de la Montagne Verte",
+            "address": "Rue de l'Est, 68000 Colmar",
+            "note": "24/7 underground, ~€5/2-3hrs. Higher clearance option (up to 2.5m)."
+          }
+        ],
+        "instruction": "Arrival plan: pull as close to 12 Rue de l'Ange as pedestrian zone allows, drop luggage briefly (confirm with Miriam), then park at Saint-Josse for the stay. Leave car parked all 3 nights — everything is walkable, and Jul 29 uses car for Haut-Koenigsbourg/Strasbourg only.",
+        "warnings": [
+          "Rue de l'Ange is in Colmar's pedestrian zone — driving to the door may be restricted or time-limited. Confirm arrival procedure with Miriam.",
+          "Avoid Parking de la Mairie — closes Sundays and at 9pm."
+        ]
+      }
+    },
+    {
+      "order_idx": 3,
+      "city": "Lucerne",
+      "country": "CH",
+      "region": "Central Switzerland",
+      "arrive_on": "2026-07-30",
+      "depart_on": "2026-08-01",
+      "status": "confirmed",
+      "color": "#C28A3A",
+      "lat": 47.0502,
+      "lng": 8.3093,
+      "notes": "Chapel Bridge, Old Town, Lake Lucerne. Pilatus Golden Round Trip day on Jul 31. Car stays parked at the apartment the whole stay — do Pilatus without moving the car.",
+      "lodging": {
+        "name": "VRBO apartment — Weystrasse",
+        "address": "Weystrasse 13, 6006 Luzern",
+        "status": "confirmed"
+      },
+      "parking": {
+        "primary": "Parking spot at apartment — confirmed and handled",
+        "instruction": "Park on arrival Jul 30. Leave car for entire stay. Load and depart morning of Aug 1."
+      }
+    },
+    {
+      "order_idx": 4,
+      "city": "Füssen",
+      "country": "DE",
+      "region": "Bavaria",
+      "arrive_on": "2026-08-01",
+      "depart_on": "2026-08-03",
+      "status": "confirmed",
+      "color": "#2D7559",
+      "lat": 47.5713,
+      "lng": 10.7027,
+      "notes": "Storybook town at the foot of the Alps. Aug 2 is exterior-only Neuschwanstein — no interior tickets, Linderhof on Aug 3 covers the Ludwig palace interior. Marienbrücke + Alpsee are the anchors.",
+      "lodging": {
+        "name": "Hotel Sonne",
+        "address": "Füssen old town",
+        "status": "confirmed_name_only"
+      },
+      "parking": {
+        "primary": "RESOLVE — hotel parking details not yet confirmed",
+        "instruction": "Working assumption: use Hotel Sonne as base, drive to Hohenschwangau for Neuschwanstein exterior day."
+      }
+    },
+    {
+      "order_idx": 5,
+      "city": "Königssee",
+      "country": "DE",
+      "region": "Bavarian Alps",
+      "arrive_on": "2026-08-03",
+      "depart_on": "2026-08-05",
+      "status": "confirmed",
+      "color": "#B85577",
+      "lat": 47.5824,
+      "lng": 12.9878,
+      "notes": "Schönau am Königssee area. Arrival via Linderhof + Oberammergau on the transfer day. Aug 4 is the big Königssee boat day — all the way to Salet/Obersee with a stop at St. Bartholomä.",
+      "lodging": {
+        "name": "Hotel Königsseer Hof",
+        "address": "Königssee / Schönau am Königssee area",
+        "status": "confirmed_name_only"
+      },
+      "parking": {
+        "primary": "RESOLVE — hotel parking details not yet confirmed",
+        "instruction": "Working assumption: leave car parked at hotel Aug 4, walk to Königssee boat dock."
+      }
+    },
+    {
+      "order_idx": 6,
+      "city": "Munich",
+      "country": "DE",
+      "region": "Bavaria",
+      "arrive_on": "2026-08-05",
+      "depart_on": "2026-08-07",
+      "status": "confirmed",
+      "color": "#6E5BAB",
+      "lat": 48.1351,
+      "lng": 11.582,
+      "notes": "Arrive evening of Aug 5 via Eagle's Nest + Salt Mine transfer day. Full day Aug 6: Viktualienmarkt, Marienplatz, Glockenspiel, Residenz (highlight visit, not deep-dive), English Garden. Rain pivot: Deutsches Museum Kids' Kingdom.",
+      "lodging": {
+        "name": "Hotel am Viktualienmarkt",
+        "address": "Utzschneiderstraße 14, 80469 München",
+        "status": "confirmed"
+      },
+      "parking": {
+        "primary": "Parkgarage Schrannenhalle — closest to hotel, best with kids + luggage (~€40/day)",
+        "backups": [
+          {
+            "name": "Isarparkhaus / München Isartor Isarparkhaus",
+            "address": "Baaderstraße 6, 80469 München",
+            "note": "Farther but cheaper (~€20/24h)",
+            "verify": "current rate, availability, height clearance, walking route"
+          }
+        ],
+        "instruction": "Use Schrannenhalle as primary arrival garage Aug 5 unless height/price/availability push to Isarparkhaus.",
+        "warnings": [
+          "Confirm rental car has green Umweltplakette (environmental sticker) before driving into Munich's low-emission zone.",
+          "Verify Schrannenhalle current rate, height clearance, overnight rules, payment before arrival."
+        ]
+      }
+    }
+  ],
+
+  "activities": [
+    {
+      "stop_order_idx": 1,
+      "title": "Duisburg flexible / recovery day",
+      "kind": "rest",
+      "starts_at": "2026-07-26T09:00:00+02:00",
+      "ends_at": "2026-07-26T22:00:00+02:00",
+      "status": "confirmed",
+      "location": "Duisburg",
+      "notes": "Intentionally loose. Jet-lag buffer before the long drive on Jul 27. No major sightseeing. TBD midday activity."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Heidelberg Castle stop en route",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-27T11:30:00+02:00",
+      "ends_at": "2026-07-27T14:00:00+02:00",
+      "status": "confirmed",
+      "location": "Heidelberg, Germany",
+      "notes": "Funicular up, castle courtyard/views. Great Barrel or Apothecary Museum if easy. DECIDE: guided interior tour vs exterior/funicular-only. One long stop on the Duisburg → Colmar drive."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Colmar old town wander (Little Venice, canals)",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-28T09:30:00+02:00",
+      "ends_at": "2026-07-28T11:30:00+02:00",
+      "status": "confirmed",
+      "location": "Colmar, France",
+      "notes": "Little Venice, canals, half-timbered streets, Ancienne Douane area. Kid reset with ice cream / snack / playground after."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Wine tasting under the arches (Ancienne Douane)",
+      "kind": "entertainment",
+      "starts_at": "2026-07-28T17:00:00+02:00",
+      "ends_at": "2026-07-28T18:30:00+02:00",
+      "status": "tentative",
+      "location": "Ancienne Douane, Colmar",
+      "notes": "VERIFY: mini wine tasting is running on this date. Parent reward while kids do easy wandering."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Haut-Koenigsbourg Castle",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-29T09:30:00+02:00",
+      "ends_at": "2026-07-29T11:15:00+02:00",
+      "status": "confirmed",
+      "location": "Orschwiller, France",
+      "notes": "VERIFY: tickets / opening details. Use 'In Search of the Lost Memory' booklet / family castle mission if available."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Strasbourg Cathedral",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-29T13:00:00+02:00",
+      "ends_at": "2026-07-29T13:45:00+02:00",
+      "status": "confirmed",
+      "location": "Strasbourg, France",
+      "notes": "Before Batorama boat tour."
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "Petite France / light Strasbourg wander",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-29T15:45:00+02:00",
+      "ends_at": "2026-07-29T16:30:00+02:00",
+      "status": "tentative",
+      "location": "Petite France, Strasbourg",
+      "notes": "Only if kid energy allows after Batorama."
+    },
+    {
+      "stop_order_idx": 3,
+      "title": "Lucerne evening walk (Lion Monument, Chapel Bridge, lakefront)",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-30T18:00:00+02:00",
+      "ends_at": "2026-07-30T20:00:00+02:00",
+      "status": "confirmed",
+      "location": "Lucerne, Switzerland",
+      "notes": "Light arrival day. No major paid attraction."
+    },
+    {
+      "stop_order_idx": 3,
+      "title": "Pilatus Golden Round Trip",
+      "kind": "sightseeing",
+      "starts_at": "2026-07-31T09:00:00+02:00",
+      "ends_at": "2026-07-31T17:00:00+02:00",
+      "status": "confirmed",
+      "location": "Mt. Pilatus",
+      "notes": "Boat from Pier 2 (target 9:38 AM) → cogwheel up → summit (Dragon Path / viewpoints) → Dragon Ride down to Fräkmüntegg → luge if operating and kid-approved → panorama gondolas to Kriens → bus/taxi/walk back. Car stays parked at apartment. No Swiss Travel Pass planned. DECIDE tickets ahead vs weather-day. DECIDE Dragon Path only vs Tomlishorn."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Skywalk Allgäu",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-01T11:00:00+02:00",
+      "ends_at": "2026-08-01T14:00:00+02:00",
+      "status": "confirmed",
+      "location": "Scheidegg, Germany",
+      "notes": "Treetop walk, adventure playgrounds, nature trail. Lunch at/near Skywalk. Primary stop on the Lucerne → Füssen transfer day. VERIFY hours. DECIDE: tickets ahead vs day-of."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Füssen old town walk",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-01T16:30:00+02:00",
+      "ends_at": "2026-08-01T18:00:00+02:00",
+      "status": "confirmed",
+      "location": "Füssen",
+      "notes": "Relaxed arrival-day walk."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Marienbrücke viewpoint (Neuschwanstein classic photo)",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-02T09:00:00+02:00",
+      "ends_at": "2026-08-02T09:30:00+02:00",
+      "status": "confirmed",
+      "location": "Hohenschwangau, Germany",
+      "notes": "Shuttle up if operating. VERIFY: Hohenschwangau parking + shuttle details."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Neuschwanstein exterior walk",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-02T09:30:00+02:00",
+      "ends_at": "2026-08-02T10:30:00+02:00",
+      "status": "confirmed",
+      "location": "Hohenschwangau, Germany",
+      "notes": "Exterior only — NOT relying on same-day interior tickets. Linderhof interior on Aug 3 fills that gap."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Alpsee / Hohenschwangau lakefront wander",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-02T11:15:00+02:00",
+      "ends_at": "2026-08-02T12:15:00+02:00",
+      "status": "confirmed",
+      "location": "Alpsee, Hohenschwangau",
+      "notes": "Kid-friendly lakefront."
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "Füssen old town / Lech River downtime",
+      "kind": "rest",
+      "starts_at": "2026-08-02T16:00:00+02:00",
+      "ends_at": "2026-08-02T17:30:00+02:00",
+      "status": "confirmed",
+      "location": "Füssen",
+      "notes": "Recovery time before dinner."
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "Linderhof Palace tour",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-03T09:25:00+02:00",
+      "ends_at": "2026-08-03T11:15:00+02:00",
+      "status": "confirmed",
+      "location": "Linderhof, Germany",
+      "notes": "9:25 AM tour — BOOKED. Gardens + photos after. Skip Venus Grotto (available time too late). Preferred over Zugspitze. VERIFY parking / arrival buffer on the day."
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "Oberammergau painted-house walk",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-03T11:30:00+02:00",
+      "ends_at": "2026-08-03T12:45:00+02:00",
+      "status": "confirmed",
+      "location": "Oberammergau, Germany",
+      "notes": "Lunch + short painted-house walk. Not museum-heavy."
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "Königssee boat to Salet + Obersee walk",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-04T08:30:00+02:00",
+      "ends_at": "2026-08-04T14:30:00+02:00",
+      "status": "confirmed",
+      "location": "Königssee",
+      "notes": "8:15 walk from hotel to dock. 8:30 boat to Salet. 9:30–11:30 Obersee walk. 11:30 boat back with stop at St. Bartholomä. 12:00–1:30 lunch at St. Bartholomä. 1:30–2:30 return boat. Return mid-afternoon to avoid peak return pressure. VERIFY boat schedule."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Eagle's Nest (Kehlsteinhaus) visit",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-05T09:20:00+02:00",
+      "ends_at": "2026-08-05T11:20:00+02:00",
+      "status": "confirmed",
+      "location": "Obersalzberg, Germany",
+      "notes": "9:20 bus up (booked), 11:00 bus down (booked). Views, photos, short walk. VERIFY parking + arrival procedure at bus area. Leave hotel by 8:20 AM."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Berchtesgaden Salt Mine tour",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-05T13:20:00+02:00",
+      "ends_at": "2026-08-05T15:00:00+02:00",
+      "status": "confirmed",
+      "location": "Berchtesgaden, Germany",
+      "notes": "1:20 PM tour (booked). VERIFY check-in timing."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Viktualienmarkt + Marienplatz + Frauenkirche exterior",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-06T08:45:00+02:00",
+      "ends_at": "2026-08-06T10:15:00+02:00",
+      "status": "confirmed",
+      "location": "Munich",
+      "notes": "Classic morning walk before Glockenspiel."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Glockenspiel (Marienplatz)",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-06T11:00:00+02:00",
+      "ends_at": "2026-08-06T11:15:00+02:00",
+      "status": "confirmed",
+      "location": "Marienplatz, Munich",
+      "notes": "Position by 10:30. Kids will love this."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Munich Residenz (highlight visit)",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-06T11:20:00+02:00",
+      "ends_at": "2026-08-06T12:20:00+02:00",
+      "status": "confirmed",
+      "location": "Residenz, Munich",
+      "notes": "Highlight visit — NOT a full deep-dive. Chosen over Nymphenburg. DECIDE: tickets ahead vs day-of."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "English Garden + Eisbach surfers",
+      "kind": "sightseeing",
+      "starts_at": "2026-08-06T13:45:00+02:00",
+      "ends_at": "2026-08-06T15:30:00+02:00",
+      "status": "confirmed",
+      "location": "English Garden, Munich",
+      "notes": "Kids love the Eisbach surfers. DECIDE: walk / taxi / transit to get there."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "Deutsches Museum Kids' Kingdom (rain/meltdown pivot)",
+      "kind": "sightseeing",
+      "status": "idea",
+      "location": "Deutsches Museum, Munich",
+      "notes": "Backup plan for Aug 6 if weather or kid energy demands. Not scheduled."
+    },
+
+    {
+      "$comment": "── MEAL PLACEHOLDERS ──────────────────────────────────────",
+      "stop_order_idx": 1,
+      "title": "TBD LUNCH — Duisburg",
+      "kind": "meal",
+      "starts_at": "2026-07-25T13:00:00+02:00",
+      "status": "idea",
+      "location": "Duisburg",
+      "notes": "Arrival day. Keep simple."
+    },
+    {
+      "stop_order_idx": 1,
+      "title": "TBD DINNER — Duisburg",
+      "kind": "meal",
+      "starts_at": "2026-07-25T19:00:00+02:00",
+      "status": "idea",
+      "location": "Duisburg"
+    },
+    {
+      "stop_order_idx": 1,
+      "title": "TBD LUNCH — Duisburg",
+      "kind": "meal",
+      "starts_at": "2026-07-26T13:00:00+02:00",
+      "status": "idea",
+      "location": "Duisburg"
+    },
+    {
+      "stop_order_idx": 1,
+      "title": "TBD DINNER — Duisburg",
+      "kind": "meal",
+      "starts_at": "2026-07-26T19:00:00+02:00",
+      "status": "idea",
+      "location": "Duisburg"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD LUNCH — Heidelberg / road lunch",
+      "kind": "meal",
+      "starts_at": "2026-07-27T13:00:00+02:00",
+      "status": "idea",
+      "location": "Heidelberg or en route"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD DINNER — Colmar (arrival)",
+      "kind": "meal",
+      "starts_at": "2026-07-27T19:30:00+02:00",
+      "status": "idea",
+      "location": "Colmar"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD LUNCH — Colmar (slow day)",
+      "kind": "meal",
+      "starts_at": "2026-07-28T12:30:00+02:00",
+      "status": "idea",
+      "location": "Colmar"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD DINNER — Colmar",
+      "kind": "meal",
+      "starts_at": "2026-07-28T19:30:00+02:00",
+      "status": "idea",
+      "location": "Colmar"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD LUNCH — Strasbourg (near cathedral)",
+      "kind": "meal",
+      "starts_at": "2026-07-29T12:15:00+02:00",
+      "status": "idea",
+      "location": "Strasbourg"
+    },
+    {
+      "stop_order_idx": 2,
+      "title": "TBD DINNER — Colmar or Strasbourg",
+      "kind": "meal",
+      "starts_at": "2026-07-29T19:30:00+02:00",
+      "status": "idea",
+      "location": "Colmar or Strasbourg"
+    },
+    {
+      "stop_order_idx": 3,
+      "title": "TBD DINNER — Lucerne (arrival)",
+      "kind": "meal",
+      "starts_at": "2026-07-30T19:30:00+02:00",
+      "status": "idea",
+      "location": "Lucerne"
+    },
+    {
+      "stop_order_idx": 3,
+      "title": "TBD LUNCH — Pilatus / mountain lunch",
+      "kind": "meal",
+      "starts_at": "2026-07-31T12:30:00+02:00",
+      "status": "idea",
+      "location": "Pilatus summit or Fräkmüntegg"
+    },
+    {
+      "stop_order_idx": 3,
+      "title": "TBD DINNER — Lucerne",
+      "kind": "meal",
+      "starts_at": "2026-07-31T19:30:00+02:00",
+      "status": "idea",
+      "location": "Lucerne"
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "TBD DINNER — Füssen",
+      "kind": "meal",
+      "starts_at": "2026-08-01T19:00:00+02:00",
+      "status": "idea",
+      "location": "Füssen"
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "TBD LUNCH — Hohenschwangau or Füssen",
+      "kind": "meal",
+      "starts_at": "2026-08-02T12:30:00+02:00",
+      "status": "idea",
+      "location": "Hohenschwangau or Füssen"
+    },
+    {
+      "stop_order_idx": 4,
+      "title": "TBD DINNER — Füssen",
+      "kind": "meal",
+      "starts_at": "2026-08-02T19:00:00+02:00",
+      "status": "idea",
+      "location": "Füssen"
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "TBD LUNCH — Oberammergau (candidate: Hotel Alte Post)",
+      "kind": "meal",
+      "starts_at": "2026-08-03T12:00:00+02:00",
+      "status": "tentative",
+      "location": "Oberammergau",
+      "notes": "Candidate: Hotel Alte Post."
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "TBD DINNER — Königssee (candidate: Seerestaurant Echostüberl)",
+      "kind": "meal",
+      "starts_at": "2026-08-03T19:00:00+02:00",
+      "status": "tentative",
+      "location": "Königssee",
+      "notes": "Candidate: Seerestaurant Echostüberl."
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "TBD LUNCH — St. Bartholomä / lakefront",
+      "kind": "meal",
+      "starts_at": "2026-08-04T12:00:00+02:00",
+      "status": "idea",
+      "location": "St. Bartholomä, Königssee"
+    },
+    {
+      "stop_order_idx": 5,
+      "title": "TBD DINNER — Berchtesgaden (candidate: Gasthaus zum Bier-Adam)",
+      "kind": "meal",
+      "starts_at": "2026-08-04T19:00:00+02:00",
+      "status": "tentative",
+      "location": "Berchtesgaden",
+      "notes": "Candidate: Gasthaus zum Bier-Adam. DECIDE: drive or taxi to dinner."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "TBD LUNCH — Berchtesgaden (candidate: Gasthof Neuhaus)",
+      "kind": "meal",
+      "starts_at": "2026-08-05T11:45:00+02:00",
+      "status": "tentative",
+      "location": "Berchtesgaden center",
+      "notes": "Between Eagle's Nest and Salt Mine. Candidate: Gasthof Neuhaus."
+    },
+    {
+      "stop_order_idx": 6,
+      "title": "TBD LUNCH — Munich (Viktualienmarkt or Schrannenhalle)",
+      "kind": "meal",
+      "starts_at": "2026-08-06T12:30:00+02:00",
+      "status": "idea",
+      "location": "Viktualienmarkt / Schrannenhalle"
+    }
+  ],
+
+  "reservations": [
+    {
+      "type": "flight",
+      "name": "DL 1701 — SMF → MSP (outbound leg 1)",
+      "starts_at": null,
+      "ends_at": null,
+      "status": "booked",
+      "provider": "Delta Air Lines",
+      "confirmation": "TBD — add PNR",
+      "notes": "Fri Jul 24, 2026. Sacramento (SMF) → Minneapolis/St. Paul (MSP). Terminal A at SMF. VERIFY exact departure/arrival times from Delta e-ticket."
+    },
+    {
+      "type": "flight",
+      "name": "DL 162 — MSP → AMS (outbound leg 2, transatlantic)",
+      "starts_at": null,
+      "ends_at": null,
+      "status": "booked",
+      "provider": "Delta Air Lines",
+      "confirmation": "TBD — add PNR",
+      "notes": "Fri Jul 24 → Sat Jul 25, 2026. Minneapolis/St. Paul (MSP) → Amsterdam Schiphol (AMS). Overnight transatlantic. VERIFY departure and arrival times."
+    },
+    {
+      "type": "flight",
+      "name": "DL 9229 — AMS → DUS (outbound leg 3)",
+      "starts_at": null,
+      "ends_at": null,
+      "status": "booked",
+      "provider": "Delta Air Lines (KLM Cityhopper codeshare)",
+      "confirmation": "TBD — add PNR",
+      "notes": "Sat Jul 25, 2026. Amsterdam (AMS) → Düsseldorf (DUS). Short connection flight, operated by KLM Cityhopper. Arrival airport is DUS — Duisburg is ~30 km / 30 min drive. VERIFY departure and arrival times."
+    },
+    {
+      "type": "flight",
+      "name": "DL 131 — MUC → ATL (return leg 1, transatlantic)",
+      "starts_at": null,
+      "ends_at": null,
+      "status": "booked",
+      "provider": "Delta Air Lines",
+      "confirmation": "TBD — add PNR",
+      "notes": "Fri Aug 7, 2026. Munich (MUC) → Atlanta (ATL). VERIFY departure time — drives Munich airport arrival target and rental car return timing."
+    },
+    {
+      "type": "flight",
+      "name": "DL 743 — ATL → SMF (return leg 2)",
+      "starts_at": null,
+      "ends_at": null,
+      "status": "booked",
+      "provider": "Delta Air Lines",
+      "confirmation": "TBD — add PNR",
+      "notes": "Fri Aug 7, 2026. Atlanta (ATL) → Sacramento (SMF). Final leg home. VERIFY arrival time."
+    },
+    {
+      "type": "car",
+      "name": "Hertz rental car (whole trip)",
+      "starts_at": "2026-07-25T00:00:00+02:00",
+      "ends_at": "2026-08-07T00:00:00+02:00",
+      "status": "booked",
+      "provider": "Hertz",
+      "confirmation": "TBD — add reservation number",
+      "notes": "One car for the entire trip. Pickup: Hertz at Düsseldorf Airport (DUS) after DL 9229 arrival. Drop-off: Hertz at Munich Airport (MUC) morning of Aug 7 before DL 131. VERIFY: green Umweltplakette (required for Munich low-emission zone). CONFIRM: Swiss vignette included or need to buy separately at border (~€40)."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 1,
+      "name": "Premier Inn Duisburg City Altstadt",
+      "starts_at": "2026-07-25T15:00:00+02:00",
+      "ends_at": "2026-07-27T11:00:00+02:00",
+      "status": "booked",
+      "provider": "Premier Inn",
+      "notes": "Oberstraße 2, 47051 Duisburg. 2 nights. Parking chargeable onsite ~€15/night, cannot be reserved. Backups: Tiefgarage Innenhafen, Parkplatz Burgplatz."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 2,
+      "name": "Chez Miriam Cecile et Caroline",
+      "starts_at": "2026-07-27T15:00:00+02:00",
+      "ends_at": "2026-07-30T11:00:00+02:00",
+      "status": "booked",
+      "confirmation": "TBD — add booking reference",
+      "notes": "12 Rue de l'Ange, 1er étage, 68000 Colmar. 3 nights. Center of old town, one flight up. Parking: Saint-Josse (€3/day, 5-min walk). VERIFY: elevator, Miriam's arrival contact info, and pedestrian-zone drop-off procedure."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 3,
+      "name": "VRBO apartment — Weystrasse 13",
+      "starts_at": "2026-07-30T15:00:00+02:00",
+      "ends_at": "2026-08-01T11:00:00+02:00",
+      "status": "booked",
+      "notes": "Weystrasse 13, 6006 Luzern. 2 nights. Parking spot at apartment confirmed."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 4,
+      "name": "Hotel Sonne",
+      "starts_at": "2026-08-01T15:00:00+02:00",
+      "ends_at": "2026-08-03T11:00:00+02:00",
+      "status": "booked",
+      "provider": "Hotel Sonne Füssen",
+      "notes": "Füssen old town. 2 nights. RESOLVE: parking details, reservation need, cost, luggage drop-off."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 5,
+      "name": "Hotel Königsseer Hof",
+      "starts_at": "2026-08-03T15:00:00+02:00",
+      "ends_at": "2026-08-05T11:00:00+02:00",
+      "status": "booked",
+      "notes": "Königssee / Schönau am Königssee. 2 nights. RESOLVE: parking availability, whether car can stay parked Aug 4, walk time to boat dock."
+    },
+    {
+      "type": "hotel",
+      "stop_order_idx": 6,
+      "name": "Hotel am Viktualienmarkt",
+      "starts_at": "2026-08-05T15:00:00+02:00",
+      "ends_at": "2026-08-07T11:00:00+02:00",
+      "status": "booked",
+      "notes": "Utzschneiderstraße 14, 80469 München. 2 nights. Parking plan: Parkgarage Schrannenhalle (primary, ~€40/day) or Isarparkhaus (backup, ~€20/24h)."
+    },
+    {
+      "type": "activity",
+      "stop_order_idx": 2,
+      "name": "Batorama Red Tour (Strasbourg)",
+      "starts_at": "2026-07-29T14:30:00+02:00",
+      "ends_at": "2026-07-29T15:40:00+02:00",
+      "status": "booked",
+      "provider": "Batorama",
+      "notes": "Standard Red Tour, NOT the Parliament disembarkation tour. Arrive dock by 2:15 PM."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 3,
+      "name": "Pilatus Golden Round Trip",
+      "starts_at": "2026-07-31T09:38:00+02:00",
+      "status": "to_book",
+      "provider": "pilatus.ch",
+      "notes": "Boat + cogwheel + gondola combo. DECIDE: buy ahead or wait for weather. Target 9:38 AM boat from Pier 2. No Swiss Travel Pass planned. VERIFY boat/cogwheel/gondola schedule. VERIFY Fräkmüntegg luge operation."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 4,
+      "name": "Skywalk Allgäu",
+      "starts_at": "2026-08-01T11:00:00+02:00",
+      "status": "to_book",
+      "provider": "skywalk-allgaeu.de",
+      "notes": "DECIDE: buy ahead or day-of. VERIFY hours."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 5,
+      "name": "Linderhof Palace tour",
+      "starts_at": "2026-08-03T09:25:00+02:00",
+      "status": "booked",
+      "provider": "linderhof.de",
+      "confirmation": "TBD — add confirmation number",
+      "notes": "9:25 AM tour — BOOKED. Preferred over Zugspitze. Skip Venus Grotto (too late). VERIFY parking + arrival buffer on the day."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 6,
+      "name": "Eagle's Nest bus (Kehlsteinhaus)",
+      "starts_at": "2026-08-05T09:20:00+02:00",
+      "ends_at": "2026-08-05T11:00:00+02:00",
+      "status": "booked",
+      "provider": "kehlsteinhaus.de",
+      "notes": "9:20 AM up, 11:00 AM down. Fixed anchor. VERIFY parking + arrival procedure at bus area."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 6,
+      "name": "Berchtesgaden Salt Mine tour",
+      "starts_at": "2026-08-05T13:20:00+02:00",
+      "status": "booked",
+      "provider": "salzbergwerk.de",
+      "notes": "Fixed anchor after lunch. VERIFY check-in timing."
+    },
+    {
+      "type": "ticket",
+      "stop_order_idx": 6,
+      "name": "Munich Residenz",
+      "starts_at": "2026-08-06T11:20:00+02:00",
+      "status": "to_book",
+      "provider": "residenz-muenchen.de",
+      "notes": "Highlight visit, not deep-dive. DECIDE: tickets ahead vs day-of."
+    },
+    {
+      "type": "restaurant",
+      "stop_order_idx": 6,
+      "name": "NOAH'S Pizzeria (Munich arrival dinner)",
+      "starts_at": "2026-08-05T19:30:00+02:00",
+      "status": "booked",
+      "provider": "NOAH'S Pizzeria",
+      "notes": "Arrival-night dinner in Munich. Kid-friendly."
+    },
+    {
+      "type": "restaurant",
+      "stop_order_idx": 6,
+      "name": "Brenner Grill (Munich final dinner)",
+      "starts_at": "2026-08-06T18:15:00+02:00",
+      "status": "booked",
+      "provider": "Brenner Grill",
+      "notes": "Final trip dinner."
+    }
+  ],
+
+  "open_items": [
+    { "kind": "verify",  "scope": "flights", "priority": "high", "description": "Confirm all 5 flight departure/arrival times against Delta e-ticket (DL 1701, DL 162, DL 9229, DL 131, DL 743)" },
+    { "kind": "resolve", "scope": "flights", "priority": "medium", "description": "Add PNR / confirmation number to flight reservations" },
+    { "kind": "resolve", "scope": "car",     "priority": "medium", "description": "Add Hertz confirmation number" },
+    { "kind": "verify",  "scope": "car",     "priority": "high", "description": "Rental car has green Umweltplakette (Munich low-emission zone)" },
+    { "kind": "verify",  "scope": "car",     "priority": "medium", "description": "Swiss vignette included with Hertz or buy separately (~€40)" },
+
+    { "kind": "resolve", "scope": "stop:colmar",       "priority": "high", "description": "Get Miriam's arrival-day contact info + check-in procedure (key handoff, arrival window, phone number)" },
+    { "kind": "verify",  "scope": "stop:colmar",       "priority": "medium", "description": "Confirm building has elevator or plan for stairs with luggage (1er étage)" },
+    { "kind": "verify",  "scope": "stop:colmar",       "priority": "medium", "description": "Confirm pedestrian-zone access to Rue de l'Ange for luggage drop-off on arrival" },
+    { "kind": "resolve", "scope": "stop:fussen",       "priority": "medium", "description": "Hotel Sonne parking — location, reservation need, cost, luggage drop" },
+    { "kind": "decide",  "scope": "stop:fussen",       "priority": "medium", "description": "Aug 2 — leave car parked or drive to Hohenschwangau" },
+    { "kind": "resolve", "scope": "stop:konigssee",    "priority": "medium", "description": "Hotel Königsseer Hof — parking availability + walk time to boat dock" },
+    { "kind": "resolve", "scope": "stop:munich",       "priority": "medium", "description": "Munich final garage choice — verify Schrannenhalle rate, height clearance, overnight rules" },
+    { "kind": "verify",  "scope": "stop:duisburg",     "priority": "low", "description": "Duisburg backup parking (Tiefgarage Innenhafen, Parkplatz Burgplatz) hours & availability" },
+
+    { "kind": "decide",  "scope": "activity:pilatus",   "priority": "medium", "description": "Pilatus tickets — buy ahead or wait for weather" },
+    { "kind": "verify",  "scope": "activity:pilatus",   "priority": "medium", "description": "Boat / cogwheel / gondola schedule for Jul 31" },
+    { "kind": "verify",  "scope": "activity:pilatus",   "priority": "low", "description": "Fräkmüntegg luge operation on Jul 31" },
+    { "kind": "decide",  "scope": "activity:pilatus",   "priority": "low", "description": "Dragon Path only vs also Tomlishorn (weather/kid-dependent)" },
+    { "kind": "decide",  "scope": "activity:skywalk",   "priority": "medium", "description": "Skywalk Allgäu tickets — buy ahead vs day-of" },
+    { "kind": "verify",  "scope": "activity:skywalk",   "priority": "medium", "description": "Skywalk Allgäu operating hours Aug 1" },
+    { "kind": "verify",  "scope": "activity:haut-koenigsbourg", "priority": "medium", "description": "Haut-Koenigsbourg tickets / opening details" },
+    { "kind": "verify",  "scope": "activity:haut-koenigsbourg", "priority": "low", "description": "'In Search of the Lost Memory' kids' booklet availability" },
+    { "kind": "verify",  "scope": "activity:neuschwanstein",    "priority": "medium", "description": "Hohenschwangau parking + shuttle to Marienbrücke details" },
+    { "kind": "verify",  "scope": "activity:eagles-nest",       "priority": "medium", "description": "Eagle's Nest bus area parking + arrival procedure" },
+    { "kind": "verify",  "scope": "activity:salt-mine",         "priority": "medium", "description": "Salt Mine check-in timing before 1:20 PM tour" },
+    { "kind": "decide",  "scope": "activity:residenz",          "priority": "low", "description": "Munich Residenz tickets — ahead vs day-of" },
+    { "kind": "decide",  "scope": "activity:heidelberg",        "priority": "medium", "description": "Heidelberg guided interior tour vs exterior/funicular-only" },
+    { "kind": "verify",  "scope": "activity:colmar-wine",       "priority": "low", "description": "Wine-under-the-arches at Ancienne Douane running Jul 28" },
+    { "kind": "verify",  "scope": "activity:konigssee-boat",    "priority": "medium", "description": "Königssee boat schedule and return timing Aug 4" },
+    { "kind": "decide",  "scope": "activity:konigssee-boat",    "priority": "low", "description": "Aug 4 dinner — drive or taxi from hotel to Berchtesgaden" },
+    { "kind": "decide",  "scope": "activity:english-garden",    "priority": "low", "description": "Aug 6 English Garden — walk / taxi / transit" },
+    { "kind": "resolve", "scope": "activity:munich-shopping",   "priority": "low", "description": "Any must-do Munich shopping / souvenirs" }
+  ],
+
+  "meal_placeholders_summary": {
+    "note": "All TBD meals are captured as activities with kind='meal'. Candidates noted where applicable.",
+    "candidates_locked_in": [
+      "Oberammergau lunch: Hotel Alte Post",
+      "Königssee dinner (Aug 3): Seerestaurant Echostüberl",
+      "Berchtesgaden dinner (Aug 4): Gasthaus zum Bier-Adam",
+      "Berchtesgaden lunch (Aug 5): Gasthof Neuhaus"
+    ]
+  },
+
+  "weather_notes": {
+    "last_updated": "2026-07-17",
+    "summary": "Heat wave broke earlier this week — pattern shifted 15-20°F cooler with rain. Trip window (Jul 24+) just entering reliable forecast range. Pattern favors cool/wet over hot/dry. Re-check with fresh forecast now that we're 6 days out.",
+    "climate_norms": {
+      "duisburg":  { "high_f": 75, "low_f": 58 },
+      "colmar":    { "high_f": 80, "low_f": 59 },
+      "lucerne":   { "high_f": 75, "low_f": 57 },
+      "fussen":    { "high_f": 73, "low_f": 54 },
+      "konigssee": { "high_f": 73, "low_f": 52 },
+      "munich":    { "high_f": 75, "low_f": 55 }
+    }
+  },
+
+  "reminders": [
+    "Add confirmation numbers to all booked reservations (flights, hotels, Linderhof, Eagle's Nest, Salt Mine, restaurants)",
+    "Verify green Umweltplakette on Hertz car before Munich (low-emission zone)",
+    "Confirm Swiss vignette (~€40) — included with Hertz or buy at border",
+    "Re-check weather now that we're inside the 10-day forecast window",
+    "Verify all flight times against Delta e-ticket / PNR"
+  ]
+}

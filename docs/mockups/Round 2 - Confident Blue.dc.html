@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background:#E7E4DD; background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.045) 1px, transparent 0); background-size:26px 26px; font-family:'Inter',system-ui,sans-serif; }
+    @keyframes tcPulse { 0%{transform:scale(.6);opacity:.5} 100%{transform:scale(2.4);opacity:0} }
+    .grp { display:flex; gap:48px; align-items:flex-start; flex-wrap:nowrap; }
+    .cap { text-align:center; margin-top:16px; }
+    .cap b { display:block; font-family:'Manrope',sans-serif; font-size:14px; font-weight:700; color:#1E2530; letter-spacing:-.01em; }
+    .cap span { display:block; font-size:12px; color:#6A665C; margin-top:2px; max-width:300px; }
+    .sec-h { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#8A8578; }
+    .sec-t { font-family:'Manrope',sans-serif; font-size:26px; font-weight:700; letter-spacing:-.02em; color:#1E2530; margin-top:6px; }
+  </style>
+</helmet>
+
+<div style="padding:56px 64px 100px; display:flex; flex-direction:column; gap:64px; width:max-content;">
+
+  <!-- Title -->
+  <div style="max-width:760px;">
+    <div class="sec-h">Trip Companion · Round 2</div>
+    <div style="font-family:'Manrope',sans-serif; font-size:38px; font-weight:800; letter-spacing:-.025em; color:#17212C; margin-top:10px;">Confident Blue — full screen set</div>
+    <div style="font-size:15px; line-height:1.6; color:#514E46; margin-top:12px;">The chosen direction across the whole app, in iPhone frames and against the real Europe 2026 data: during-trip dashboard, editable itinerary, reservations with the paste-email AI shortcut, map, open items, notes, settings, empty states, PWA install, and a dark-mode parity check.</div>
+    <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+      <span style="width:20px; height:20px; border-radius:6px; background:#1E4E80;"></span>
+      <span style="width:20px; height:20px; border-radius:6px; background:#E0A43B;"></span>
+      <span style="width:20px; height:20px; border-radius:6px; background:#2E7D5B;"></span>
+      <span style="width:20px; height:20px; border-radius:6px; background:#C25A3B;"></span>
+      <span style="font-size:12px; color:#6A665C; font-family:'JetBrains Mono',monospace; margin-left:6px;">Primary · Amber accent · Confirmed · Attention</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Core -->
+  <div>
+    <div class="sec-h">01</div><div class="sec-t">The daily surface</div>
+    <div class="grp" style="margin-top:26px;">
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="TodayDuringScreen" hint-size="390px,940px"></dc-import></div><div class="cap"><b>Today · during trip</b><span>Where you are now, next-up countdown, kid pacing</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="ItineraryScreen" hint-size="390px,940px"></dc-import></div><div class="cap"><b>Itinerary · inline edit</b><span>Mixed statuses, live partner editing, open-item badges</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="ReservationsScreen" hint-size="390px,900px"></dc-import></div><div class="cap"><b>Reservations · paste email</b><span>Flight-leg group + AI extracting a confirmation</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="MapScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Map · stop sheet</b><span>Numbered pins in stop colors, bottom sheet expanded</span></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Organize -->
+  <div>
+    <div class="sec-h">02</div><div class="sec-t">Working through it</div>
+    <div class="grp" style="margin-top:26px;">
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="OpenItemsScreen" hint-size="390px,900px"></dc-import></div><div class="cap"><b>Open items · filterable</b><span>31 items by kind + priority, tap to resolve with a note</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="NotesScreen" hint-size="390px,880px"></dc-import></div><div class="cap"><b>Notes · pinned to stop</b><span>Freeform journal, convert a line to activity/reservation</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="SettingsScreen" hint-size="390px,900px"></dc-import></div><div class="cap"><b>Settings</b><span>Invite partner, theme, add-to-home, API keys</span></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Empty states -->
+  <div>
+    <div class="sec-h">03</div><div class="sec-t">Empty states with personality</div>
+    <div class="grp" style="margin-top:26px;">
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="EmptyReservationsScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Reservations · empty</b><span>Points straight at the paste-email superpower</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="EmptyNotesScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Notes · empty</b><span>Warm, never an error — one clear action</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="EmptyChatScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Chat · empty</b><span>Context-aware starter chips, sets the approval promise</span></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: PWA -->
+  <div>
+    <div class="sec-h">04</div><div class="sec-t">Living on the home screen</div>
+    <div class="grp" style="margin-top:26px;">
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="PwaIosScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Install · iOS Safari</b><span>Share sheet with Add to Home Screen highlighted</span></div></div>
+      <div><div style="padding:12px; background:#0c0d10; border-radius:54px; box-shadow:0 40px 80px -30px rgba(15,20,28,.5); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="PwaAndroidScreen" hint-size="390px,844px"></dc-import></div><div class="cap"><b>Install · Android Chrome</b><span>Native install sheet, branded icon</span></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Dark mode -->
+  <div style="background:#14181D; border-radius:36px; padding:44px 48px 52px; margin:0 -12px;">
+    <div class="sec-h" style="color:#6E7883;">05</div><div class="sec-t" style="color:#E7EAEE;">Dark mode — a real design</div>
+    <div style="font-size:14px; color:#9BA6B2; margin-top:8px; max-width:560px; line-height:1.55;">Elevated warm-grey surfaces, not inverted black. The primary lifts to stay recognizably the primary; status colors keep their meaning.</div>
+    <div class="grp" style="margin-top:28px;">
+      <div style="--bg:#14181D; --surface:#1C222A; --surface-2:#232A33; --text:#E7EAEE; --text-dim:#9BA6B2; --text-mute:#6E7883; --border:#2C333C; --primary:#4E90D9; --primary-ink:#0C1116; --primary-soft:#1E2E3E; --accent:#E7B25A; --accent-soft:#2A2418; --confirmed:#4FB488; --confirmed-soft:#16271F; --warning:#E07E5C; --warning-soft:#2E211C; --tentative:#D9A94E;">
+        <div style="padding:12px; background:#000; border-radius:54px; box-shadow:0 40px 80px -30px rgba(0,0,0,.7); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="TodayDuringScreen" hint-size="390px,940px"></dc-import></div>
+        <div class="cap"><b style="color:#E7EAEE;">Today · dark</b><span style="color:#9BA6B2;">Same hierarchy, warmer at night</span></div>
+      </div>
+      <div style="--bg:#14181D; --surface:#1C222A; --surface-2:#232A33; --text:#E7EAEE; --text-dim:#9BA6B2; --text-mute:#6E7883; --border:#2C333C; --primary:#4E90D9; --primary-ink:#0C1116; --primary-soft:#1E2E3E; --accent:#E7B25A; --accent-soft:#2A2418; --confirmed:#4FB488; --confirmed-soft:#16271F; --warning:#E07E5C; --warning-soft:#2E211C; --tentative:#D9A94E;">
+        <div style="padding:12px; background:#000; border-radius:54px; box-shadow:0 40px 80px -30px rgba(0,0,0,.7); position:relative;"><div style="position:absolute; top:23px; left:50%; transform:translateX(-50%); width:100px; height:30px; background:#000; border-radius:16px; z-index:6;"></div><dc-import name="ChatScreen" hint-size="390px,900px"></dc-import></div>
+        <div class="cap"><b style="color:#E7EAEE;">Chat · dark</b><span style="color:#9BA6B2;">Proposal card still reads as a distinct object</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

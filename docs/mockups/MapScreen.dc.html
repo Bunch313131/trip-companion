@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:390px; height:844px; background:var(--bg,#F1EEE7); color:var(--text,#17212C); font-family:var(--ui,'Inter'),system-ui,sans-serif; border-radius:38px; overflow:hidden; box-shadow:0 30px 60px -20px rgba(20,25,35,.28), 0 0 0 1px var(--border,#E6E1D8); display:flex; flex-direction:column; position:relative;">
+
+  <!-- MAP CANVAS (placeholder tiles) -->
+  <div style="position:absolute; inset:0; background:
+      radial-gradient(120% 90% at 30% 20%, #dfe7dd 0%, #d3dedd 40%, transparent 70%),
+      radial-gradient(100% 80% at 80% 70%, #d9e2ec 0%, transparent 60%),
+      linear-gradient(160deg, #e8eae2 0%, #dde3da 100%);
+      background-color:#e2e6dc;">
+    <!-- subtle grid to read as tiles -->
+    <div style="position:absolute; inset:0; background-image:linear-gradient(rgba(120,130,120,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(120,130,120,.08) 1px, transparent 1px); background-size:46px 46px;"></div>
+
+    <!-- route line (confirmed solid) -->
+    <svg viewBox="0 0 390 560" style="position:absolute; inset:0; width:100%; height:66%;" fill="none">
+      <path d="M120 70 L150 150 L120 250 L215 300 L285 250 L300 360" stroke="#1E4E80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M150 150 L95 120" stroke="#1E4E80" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/>
+      <path d="M120 250 L60 220" stroke="#1E4E80" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/>
+    </svg>
+
+    <!-- pins -->
+    <div style="position:absolute; left:108px; top:56px; display:flex; flex-direction:column; align-items:center;"><span style="width:26px; height:26px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#2F5C8A; border:2px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,.25); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:12px; font-weight:700;">1</span></span></div>
+    <div style="position:absolute; left:138px; top:136px; display:flex; flex-direction:column; align-items:center;"><span style="width:26px; height:26px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#6B8E3F; border:2px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,.25); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:12px; font-weight:700;">2</span></span></div>
+    <!-- selected pin 3 Lucerne -->
+    <div style="position:absolute; left:104px; top:230px; display:flex; flex-direction:column; align-items:center;"><span style="width:34px; height:34px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#C28A3A; border:3px solid #fff; box-shadow:0 6px 14px rgba(0,0,0,.35); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:14px; font-weight:700;">3</span></span></div>
+    <div style="position:absolute; left:203px; top:288px;"><span style="width:26px; height:26px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#2D7559; border:2px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,.25); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:12px; font-weight:700;">4</span></span></div>
+    <div style="position:absolute; left:273px; top:238px;"><span style="width:26px; height:26px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#B85577; border:2px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,.25); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:12px; font-weight:700;">5</span></span></div>
+    <div style="position:absolute; left:288px; top:348px;"><span style="width:26px; height:26px; border-radius:50% 50% 50% 2px; transform:rotate(45deg); background:#6E5BAB; border:2px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,.25); display:grid; place-items:center;"><span style="transform:rotate(-45deg); color:#fff; font-size:12px; font-weight:700;">6</span></span></div>
+  </div>
+
+  <!-- status bar -->
+  <div style="position:relative; display:flex; justify-content:space-between; align-items:center; padding:14px 26px 6px; font-size:14px; font-weight:600;">
+    <span style="font-variant-numeric:tabular-nums; font-family:var(--mono,'JetBrains Mono'),monospace;">9:41</span>
+    <span style="width:17px; height:10px; border:1.5px solid var(--text,#17212C); border-radius:3px; display:inline-block; position:relative;"><span style="position:absolute; inset:1.5px; width:70%; background:var(--text,#17212C); border-radius:1px;"></span></span>
+  </div>
+
+  <!-- floating controls -->
+  <div style="position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:6px 18px;">
+    <div style="background:var(--surface,#fff); border:1px solid var(--border,#E6E1D8); border-radius:14px; padding:8px 13px; box-shadow:0 6px 16px -10px rgba(0,0,0,.3);">
+      <div style="font-size:13px; font-weight:600;">Europe Family Trip</div>
+      <div style="font-size:11px; color:var(--text-dim,#56626F); font-family:var(--mono,monospace);">6 stops · 1,180 km</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <span style="width:38px; height:38px; border-radius:12px; background:var(--surface,#fff); border:1px solid var(--border,#E6E1D8); display:grid; place-items:center; box-shadow:0 6px 16px -10px rgba(0,0,0,.3); color:var(--text-dim,#56626F);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+      <span style="width:38px; height:38px; border-radius:12px; background:var(--surface,#fff); border:1px solid var(--border,#E6E1D8); display:grid; place-items:center; box-shadow:0 6px 16px -10px rgba(0,0,0,.3); color:var(--primary,#1E4E80);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 00-8-8z"/></svg></span>
+    </div>
+  </div>
+
+  <!-- legend -->
+  <div style="position:relative; margin:6px 18px 0; display:inline-flex; align-self:flex-start; gap:12px; background:var(--surface,#fff); border:1px solid var(--border,#E6E1D8); border-radius:11px; padding:7px 12px; box-shadow:0 6px 16px -10px rgba(0,0,0,.3); font-size:10.5px; color:var(--text-dim,#56626F);">
+    <span style="display:flex; align-items:center; gap:5px;"><span style="width:16px; height:3px; background:#1E4E80; border-radius:2px;"></span>Route</span>
+    <span style="display:flex; align-items:center; gap:5px;"><span style="width:16px; height:0; border-top:2px dashed #1E4E80;"></span>Day-trip</span>
+    <span style="display:flex; align-items:center; gap:5px;"><span style="font-family:var(--mono,monospace);">MapTiler</span></span>
+  </div>
+
+  <!-- BOTTOM SHEET expanded -->
+  <div style="position:relative; margin-top:auto; background:var(--surface,#fff); border-radius:26px 26px 38px 38px; box-shadow:0 -18px 44px -20px rgba(15,20,28,.4); padding:8px 20px 24px;">
+    <div style="width:38px; height:4px; border-radius:2px; background:var(--border,#E6E1D8); margin:6px auto 12px;"></div>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="width:20px; height:20px; border-radius:50%; background:#C28A3A; color:#fff; display:grid; place-items:center; font-size:11px; font-weight:700;">3</span><span style="font-family:var(--display,'Manrope'),sans-serif; font-size:19px; font-weight:700;">Lucerne 🇨🇭</span></div>
+        <div style="font-size:12px; color:var(--text-dim,#56626F); font-family:var(--mono,monospace); margin-top:3px;">Jul 30 – Aug 1 · 2 nights · stop 3 of 6</div>
+      </div>
+      <span style="font-size:11px; font-weight:600; color:var(--confirmed,#2E7D5B); background:var(--confirmed-soft,#E3F1EA); padding:5px 10px; border-radius:20px; flex:none;">Confirmed</span>
+    </div>
+
+    <div style="margin-top:14px; display:flex; gap:9px;">
+      <div style="flex:1; background:var(--surface-2,#F4F1EA); border-radius:13px; padding:11px 12px;"><div style="font-size:10.5px; color:var(--text-mute,#8A93A0); font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Weather</div><div style="font-family:var(--mono,monospace); font-size:15px; font-weight:600; margin-top:3px;">75° ⛅</div></div>
+      <div style="flex:1; background:var(--surface-2,#F4F1EA); border-radius:13px; padding:11px 12px;"><div style="font-size:10.5px; color:var(--text-mute,#8A93A0); font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Bookings</div><div style="font-size:15px; font-weight:600; margin-top:3px;">2 <span style="font-size:11px; color:var(--text-mute,#8A93A0); font-weight:500;">· 1 to book</span></div></div>
+      <div style="flex:1; background:var(--surface-2,#F4F1EA); border-radius:13px; padding:11px 12px;"><div style="font-size:10.5px; color:var(--text-mute,#8A93A0); font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Open</div><div style="font-size:15px; font-weight:600; margin-top:3px; color:var(--warning,#C25A3B);">3 items</div></div>
+    </div>
+
+    <div style="margin-top:12px; font-size:12.5px; color:var(--text-dim,#56626F); line-height:1.5;">Chapel Bridge, Old Town, Lake Lucerne. Pilatus Golden Round Trip on Jul 31 — car stays parked all stay.</div>
+
+    <div style="margin-top:14px; display:flex; gap:9px;">
+      <span style="flex:1; text-align:center; background:var(--primary,#1E4E80); color:var(--primary-ink,#fff); font-size:13.5px; font-weight:600; padding:11px 0; border-radius:13px;">Open stop</span>
+      <span style="text-align:center; border:1px solid var(--border,#E6E1D8); color:var(--text,#17212C); font-size:13.5px; font-weight:600; padding:11px 16px; border-radius:13px;">Directions</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}"></script>
+</body>
+</html>
