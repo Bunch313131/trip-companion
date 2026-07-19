@@ -100,3 +100,49 @@ body {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* Minimal prose for assistant chat markdown */
+.prose-chat > * + * {
+  margin-top: 0.6em;
+}
+.prose-chat p {
+  margin: 0;
+}
+.prose-chat strong {
+  font-weight: 600;
+  color: var(--text);
+}
+.prose-chat a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.4em 0;
+  padding-left: 1.2em;
+}
+.prose-chat ul {
+  list-style: disc;
+}
+.prose-chat ol {
+  list-style: decimal;
+}
+.prose-chat li {
+  margin: 0.2em 0;
+}
+.prose-chat code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1em;
+  margin-top: 0.8em;
+}
