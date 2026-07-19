@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/nav/app-header';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { SignOutButton } from '@/components/auth/sign-out-button';
+import { InstallPrompt } from '@/components/pwa/install-prompt';
 import { TRIP } from '@/lib/constants';
 
 export default function SettingsPage() {
@@ -33,6 +34,8 @@ export default function SettingsPage() {
             placeholders in the header.
           </p>
         </section>
+
+        <InstallPrompt />
 
         <SignOutButton />
 

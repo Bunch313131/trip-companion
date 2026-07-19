@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/lib/auth-context';
+import { ServiceWorkerRegistrar } from '@/components/pwa/service-worker';
 import './globals.css';
 
 const inter = Inter({
@@ -29,6 +30,13 @@ export const metadata: Metadata = {
   title: 'Trip Companion',
   description: 'Your living itinerary.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -68,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>{children}</AuthProvider>
+        <ServiceWorkerRegistrar />
         <Toaster position="top-center" theme="system" richColors />
       </body>
     </html>
