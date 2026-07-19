@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { Drawer } from 'vaul';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -9,6 +9,16 @@ import { flag, dateRange, nights } from '@/lib/format';
 import type { StopDoc, WithId } from '@/types/domain';
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
+type MarkerEntry = { marker: maplibregl.Marker; el: HTMLButtonElement };
+
+function routeGeoJSON(points: WithId<StopDoc>[]): GeoJSON.Feature {
+  return {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'LineString', coordinates: points.map((s) => [s.lng, s.lat]) },
+  };
+}
 
 export function RouteMap({
   stops,
@@ -19,59 +29,51 @@ export function RouteMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
+  const styleReadyRef = useRef(false);
+  const didFitRef = useRef(false);
   const [selected, setSelected] = useState<WithId<StopDoc> | null>(null);
 
   // Sorted, geocoded stops only.
-  const points = stops
-    .filter((s) => s.status !== 'cancelled' && typeof s.lat === 'number' && typeof s.lng === 'number')
-    .sort((a, b) => a.orderIdx - b.orderIdx);
+  const points = useMemo(
+    () =>
+      stops
+        .filter(
+          (s) => s.status !== 'cancelled' && typeof s.lat === 'number' && typeof s.lng === 'number'
+        )
+        .sort((a, b) => a.orderIdx - b.orderIdx),
+    [stops]
+  );
 
+  // Latest points, readable from marker click handlers without re-binding them.
+  const pointsRef = useRef(points);
+  pointsRef.current = points;
+
+  // A signature that changes whenever anything the map draws changes.
+  const signature = points
+    .map((p) => `${p.id}:${p.lat}:${p.lng}:${p.color}:${p.orderIdx}:${p.status}`)
+    .join('|');
+
+  // ── Init the map once ──────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || points.length === 0) return;
-    if (!MAPTILER_KEY) return;
+    if (!containerRef.current || mapRef.current || !MAPTILER_KEY) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-      center: [points[0].lng, points[0].lat],
-      zoom: 5,
+      center: [10.4, 48.5], // central Europe until stops load
+      zoom: 4,
       attributionControl: { compact: true },
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
-    // Keep the WebGL canvas in sync with the container. Without this, a map
-    // created before its container has laid out renders into a single corner.
+    // Keep the WebGL canvas sized to the container (else it corner-renders).
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
 
-    // Numbered, colored markers.
-    points.forEach((stop, i) => {
-      const el = document.createElement('button');
-      el.type = 'button';
-      el.setAttribute('aria-label', stop.city);
-      el.style.cssText = `width:30px;height:30px;border-radius:50%;background:${stop.color};color:#fff;font:600 13px/1 var(--ui),sans-serif;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;`;
-      el.textContent = String(i + 1);
-      el.addEventListener('click', () => {
-        setSelected(stop);
-        map.flyTo({ center: [stop.lng, stop.lat], zoom: 8, duration: 800 });
-      });
-      new maplibregl.Marker({ element: el }).setLngLat([stop.lng, stop.lat]).addTo(map);
-    });
-
     map.on('load', () => {
-      // Route line through stops in order.
-      map.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: points.map((s) => [s.lng, s.lat]),
-          },
-        },
-      });
+      map.addSource('route', { type: 'geojson', data: routeGeoJSON(pointsRef.current) });
       map.addLayer({
         id: 'route-line',
         type: 'line',
@@ -84,22 +86,98 @@ export function RouteMap({
           'line-opacity': 0.7,
         },
       });
-
-      // Fit all stops in view.
-      const bounds = points.reduce(
-        (b, s) => b.extend([s.lng, s.lat]),
-        new maplibregl.LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat])
-      );
-      map.fitBounds(bounds, { padding: 64, maxZoom: 8, duration: 0 });
+      styleReadyRef.current = true;
+      // Trigger the sync effect now that the style is ready.
+      map.fire('tc:styleready');
     });
 
     return () => {
       ro.disconnect();
+      markersRef.current.forEach((e) => e.marker.remove());
+      markersRef.current.clear();
+      styleReadyRef.current = false;
+      didFitRef.current = false;
       map.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  // ── Reconcile markers + route whenever stops change ────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const sync = () => {
+      // Markers don't require the style to be loaded, so reconcile them
+      // immediately. Only the route line waits for the source to exist.
+      const existing = markersRef.current;
+      const seen = new Set<string>();
+
+      points.forEach((stop, i) => {
+        seen.add(stop.id);
+        let entry = existing.get(stop.id);
+        if (!entry) {
+          const el = document.createElement('button');
+          el.type = 'button';
+          el.style.cssText =
+            'width:30px;height:30px;border-radius:50%;color:#fff;font:600 13px/1 var(--ui),sans-serif;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;';
+          el.addEventListener('click', () => {
+            const s = pointsRef.current.find((p) => p.id === stop.id);
+            if (!s) return;
+            setSelected(s);
+            map.flyTo({ center: [s.lng, s.lat], zoom: 8, duration: 800 });
+          });
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([
+            stop.lng,
+            stop.lat,
+          ]);
+          entry = { marker, el };
+          existing.set(stop.id, entry);
+          marker.addTo(map);
+        }
+        // Update mutable bits (order number, color, position, label).
+        entry.el.textContent = String(i + 1);
+        entry.el.style.background = stop.color;
+        entry.el.setAttribute('aria-label', stop.city);
+        entry.marker.setLngLat([stop.lng, stop.lat]);
+      });
+
+      // Remove markers for stops that are gone.
+      existing.forEach((entry, id) => {
+        if (!seen.has(id)) {
+          entry.marker.remove();
+          existing.delete(id);
+        }
+      });
+
+      // Update the route line (only once the style/source exists).
+      if (styleReadyRef.current) {
+        const src = map.getSource('route') as maplibregl.GeoJSONSource | undefined;
+        src?.setData(routeGeoJSON(points));
+      }
+
+      // Fit bounds once, on first data.
+      if (!didFitRef.current && points.length > 0) {
+        const bounds = points.reduce(
+          (b, s) => b.extend([s.lng, s.lat] as [number, number]),
+          new maplibregl.LngLatBounds(
+            [points[0].lng, points[0].lat],
+            [points[0].lng, points[0].lat]
+          )
+        );
+        map.fitBounds(bounds, { padding: 56, maxZoom: 8, duration: 0 });
+        didFitRef.current = true;
+      }
+    };
+
+    sync();
+    // Re-run once the style loads so the route line draws too.
+    if (!styleReadyRef.current) map.once('tc:styleready', sync);
+    return () => {
+      map.off('tc:styleready', sync);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points.length]);
+  }, [signature]);
 
   if (!MAPTILER_KEY) {
     return (
