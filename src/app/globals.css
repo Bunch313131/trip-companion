@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ─── DESIGN TOKENS — "Confident Blue" ───────────────────────────────
+ * Light is the default (matches the screen mockups, which render from
+ * their light fallback values). Dark is a real, considered theme applied
+ * via the `.dark` class on <html> (toggle + system preference, set by the
+ * no-flash script in layout.tsx). Keep in sync with tailwind.config.ts.
+ * ────────────────────────────────────────────────────────────────────
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Type families (loaded via next/font in layout.tsx) */
+  --ui: var(--font-ui), 'Inter', system-ui, sans-serif;
+  --display: var(--font-display), 'Manrope', sans-serif;
+  --mono: var(--font-mono), 'JetBrains Mono', monospace;
+
+  /* Backgrounds — warm cream */
+  --bg: #f1eee7;
+  --surface: #ffffff;
+  --surface-2: #f4f1ea;
+  --border: #e6e1d8;
+
+  /* Text — ink */
+  --text: #17212c;
+  --text-dim: #56626f;
+  --text-mute: #8a93a0;
+
+  /* Primary — deep confident blue */
+  --primary: #1e4e80;
+  --primary-soft: #e7eff6;
+  --primary-ink: #ffffff;
+
+  /* Accent — warm gold */
+  --accent: #e0a43b;
+  --accent-soft: #fbf0dc;
+
+  /* Status */
+  --confirmed: #2e7d5b;
+  --confirmed-soft: #e3f1ea;
+  --tentative: #c08a2e;
+  --tentative-soft: #f5ebd8;
+  --warning: #c25a3b;
+  --warning-soft: #f8e9e2;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Backgrounds — elevated dark */
+  --bg: #14181d;
+  --surface: #1c222a;
+  --surface-2: #232a33;
+  --border: #2c333c;
+
+  /* Text */
+  --text: #e7eaee;
+  --text-dim: #9ba6b2;
+  --text-mute: #6e7883;
+
+  /* Primary */
+  --primary: #4e90d9;
+  --primary-soft: #1e2e3e;
+  --primary-ink: #0c1116;
+
+  /* Accent */
+  --accent: #e7b25a;
+  --accent-soft: #2a2418;
+
+  /* Status */
+  --confirmed: #4fb488;
+  --confirmed-soft: #16271f;
+  --tentative: #d9a94e;
+  --tentative-soft: #2a2413;
+  --warning: #e07e5c;
+  --warning-soft: #2e211c;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Tabular numerals for countdowns / times */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
