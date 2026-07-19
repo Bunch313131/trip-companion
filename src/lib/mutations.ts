@@ -1,6 +1,13 @@
 'use client';
 
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  type DocumentReference,
+} from 'firebase/firestore';
 import { getClientDb } from '@/lib/firebase-client';
 
 /**
@@ -44,4 +51,29 @@ export function patchReservation(
     doc(getClientDb(), 'trips', tripId, 'reservations', reservationId),
     stamp(changes, uid)
   );
+}
+
+/** A fresh doc ref (with an id) in a trip subcollection — lets us know the id
+ *  before writing, e.g. for a Storage upload path. */
+export function newDocRef(tripId: string, sub: string): DocumentReference {
+  return doc(collection(getClientDb(), 'trips', tripId, sub));
+}
+
+/** Create a doc at a known ref, stamping created/updated + editor. */
+export function createDoc(
+  ref: DocumentReference,
+  uid: string,
+  data: Record<string, unknown>
+) {
+  return setDoc(ref, {
+    ...data,
+    lastEditedBy: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** Soft-delete: never hard-delete records the AI may reference. */
+export function softDelete(tripId: string, sub: string, id: string, uid: string) {
+  return updateDoc(doc(getClientDb(), 'trips', tripId, sub, id), stamp({ status: 'cancelled' }, uid));
 }

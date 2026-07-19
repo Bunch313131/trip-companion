@@ -16,12 +16,19 @@ const ICON: Record<string, string> = {
   other: 'M4 4h16v16H4z',
 };
 
-export function ReservationItem({ res }: { res: WithId<ReservationDoc> }) {
+export function ReservationItem({
+  res,
+  onEdit,
+}: {
+  res: WithId<ReservationDoc>;
+  onEdit?: () => void;
+}) {
   const when = fmtDateTime(res.startsAt, { time: res.type !== 'hotel' });
   const cost = money(res.costCents, res.costCurrency);
   const dimmed = res.status === 'cancelled' || res.status === 'completed';
 
-  async function copyConfirmation() {
+  async function copyConfirmation(e: React.MouseEvent) {
+    e.stopPropagation();
     if (!res.confirmation) return;
     try {
       await navigator.clipboard.writeText(res.confirmation);
@@ -32,7 +39,10 @@ export function ReservationItem({ res }: { res: WithId<ReservationDoc> }) {
   }
 
   return (
-    <div className={`rounded-card border border-border bg-surface p-3.5 shadow-card ${dimmed ? 'opacity-70' : ''}`}>
+    <div
+      onClick={onEdit}
+      className={`rounded-card border border-border bg-surface p-3.5 shadow-card ${dimmed ? 'opacity-70' : ''} ${onEdit ? 'cursor-pointer transition-colors hover:border-primary/40' : ''}`}
+    >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-text-dim">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">

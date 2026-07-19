@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { AppHeader } from '@/components/nav/app-header';
 import { ReservationItem } from '@/components/reservations/reservation-item';
+import { ReservationForm } from '@/components/reservations/reservation-form';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { flag } from '@/lib/format';
@@ -18,6 +20,18 @@ export default function ReservationsPage() {
     tripId,
     'reservations'
   );
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<WithId<ReservationDoc> | null>(null);
+
+  function openAdd() {
+    setEditing(null);
+    setFormOpen(true);
+  }
+  function openEdit(r: WithId<ReservationDoc>) {
+    setEditing(r);
+    setFormOpen(true);
+  }
 
   if (loading || resLoading) {
     return (
@@ -40,15 +54,24 @@ export default function ReservationsPage() {
     <>
       <AppHeader section="Bookings" />
       <main className="space-y-5 px-5 py-5">
-        <p className="text-xs text-text-dim">
-          {active.length} bookings · <span className="text-warning">{toBook.length} to book</span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-text-dim">
+            {active.length} bookings · <span className="text-warning">{toBook.length} to book</span>
+          </p>
+          <button
+            type="button"
+            onClick={openAdd}
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-ink"
+          >
+            + Add
+          </button>
+        </div>
 
         {/* To book — surfaced first */}
         {toBook.length > 0 && (
           <Group title="Still to book" accent>
             {toBook.map((r) => (
-              <ReservationItem key={r.id} res={r} />
+              <ReservationItem key={r.id} res={r} onEdit={() => openEdit(r)} />
             ))}
           </Group>
         )}
@@ -57,7 +80,7 @@ export default function ReservationsPage() {
         {tripWide.length > 0 && (
           <Group title="Trip-wide">
             {tripWide.map((r) => (
-              <ReservationItem key={r.id} res={r} />
+              <ReservationItem key={r.id} res={r} onEdit={() => openEdit(r)} />
             ))}
           </Group>
         )}
@@ -73,7 +96,7 @@ export default function ReservationsPage() {
             return (
               <Group key={stop.id} title={`${stop.city} ${flag(stop.country)}`}>
                 {items.map((r) => (
-                  <ReservationItem key={r.id} res={r} />
+                  <ReservationItem key={r.id} res={r} onEdit={() => openEdit(r)} />
                 ))}
               </Group>
             );
@@ -85,9 +108,26 @@ export default function ReservationsPage() {
             <p className="mt-1 text-sm text-text-dim">
               Flights, hotels, and tickets will show up here.
             </p>
+            <button
+              type="button"
+              onClick={openAdd}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-ink"
+            >
+              Add your first booking
+            </button>
           </div>
         )}
       </main>
+
+      {tripId && (
+        <ReservationForm
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          tripId={tripId}
+          stops={stops}
+          existing={editing}
+        />
+      )}
     </>
   );
 }
