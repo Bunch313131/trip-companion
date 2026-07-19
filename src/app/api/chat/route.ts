@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb, requireTripAccess } from '@/lib/firebase-admin';
 import { AI_TOOLS } from '@/lib/ai-tools';
@@ -8,15 +7,25 @@ import { createProposalFromTool } from '@/lib/ai/create-proposal';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = 'claude-sonnet-4-6'; // per PROJECT_BRIEF; override to claude-opus-4-8 for max quality
+// Gemini free tier: function calling works; Google Search grounding needs a
+// paid tier, so it's omitted. gemini-flash-latest tracks the current Flash.
+const MODEL = 'gemini-flash-latest';
 
-// The propose_* tools are handled server-side (they create proposal docs);
-// web search is Anthropic's server tool (Claude runs it).
-const PROPOSE_TOOLS = AI_TOOLS.filter((t) => t.name.startsWith('propose_'));
-const TOOLS = [
-  ...PROPOSE_TOOLS,
-  { type: 'web_search_20260209', name: 'web_search' },
-] as Anthropic.ToolUnion[];
+// propose_* tools become Gemini function declarations; they create proposals.
+const FUNCTION_DECLARATIONS = AI_TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => ({
+  name: t.name,
+  description: t.description,
+  parameters: t.input_schema,
+}));
+
+type GeminiPart = {
+  text?: string;
+  functionCall?: { name: string; args: Record<string, unknown> };
+  functionResponse?: { name: string; response: Record<string, unknown> };
+  // Gemini 3.x attaches a thought signature to function-call parts that MUST
+  // be echoed back verbatim when continuing the turn.
+  thoughtSignature?: string;
+};
 
 export async function POST(request: Request) {
   let body: { tripId?: string; message?: string };
@@ -37,31 +46,27 @@ export async function POST(request: Request) {
     return Response.json({ error: (err as Error).message }, { status: 403 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({ error: 'ANTHROPIC_API_KEY is not configured' }, { status: 503 });
-  }
+  const KEY = process.env.GEMINI_API_KEY;
+  if (!KEY) return Response.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 503 });
 
   const db = adminDb();
   const chatRef = db.collection(`trips/${tripId}/chatMessages`);
 
-  // Persist the user's message.
-  await chatRef.add({
-    role: 'user',
-    userId: uid,
-    content: message,
-    createdAt: FieldValue.serverTimestamp(),
-  });
+  await chatRef.add({ role: 'user', userId: uid, content: message, createdAt: FieldValue.serverTimestamp() });
 
-  // Recent history (last 20 messages, chronological) as plain text turns.
+  // Recent history as Gemini contents (assistant → 'model').
   const histSnap = await chatRef.orderBy('createdAt', 'desc').limit(20).get();
-  const history: Anthropic.MessageParam[] = histSnap.docs
+  const history = histSnap.docs
     .reverse()
     .map((d) => d.data())
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content) }));
+    .filter((m) => (m.role === 'user' || m.role === 'assistant') && String(m.content).trim())
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: String(m.content) }],
+    }));
 
-  const system = await buildTripSystemPrompt(tripId);
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const systemText = await buildTripSystemPrompt(tripId);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${KEY}`;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -69,74 +74,101 @@ export async function POST(request: Request) {
       const send = (event: string, data: unknown) =>
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 
-      const messages: Anthropic.MessageParam[] = [...history];
+      const contents: Array<{ role: string; parts: GeminiPart[] }> = [...history];
       const proposalIds: string[] = [];
       let assistantText = '';
 
       try {
         for (let turn = 0; turn < 6; turn++) {
-          const s = anthropic.messages.stream({
-            model: MODEL,
-            max_tokens: 8000,
-            thinking: { type: 'adaptive' },
-            system,
-            tools: TOOLS,
-            messages,
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemText }] },
+              tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+              contents,
+            }),
           });
-          s.on('text', (delta: string) => {
-            assistantText += delta;
-            send('delta', { text: delta });
-          });
+          if (!resp.ok || !resp.body) {
+            const errText = await resp.text().catch(() => '');
+            throw new Error(`Gemini ${resp.status}: ${errText.slice(0, 160)}`);
+          }
 
-          const msg = await s.finalMessage();
-          messages.push({ role: 'assistant', content: msg.content });
+          // Parse the SSE stream, accumulating text + function calls for this turn.
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          let turnText = '';
+          // Store whole parts so the thoughtSignature rides along.
+          const functionCallParts: GeminiPart[] = [];
 
-          const proposeCalls = msg.content.filter(
-            (b): b is Anthropic.ToolUseBlock =>
-              b.type === 'tool_use' && String(b.name).startsWith('propose_')
-          );
-
-          if (proposeCalls.length > 0) {
-            const toolResults: Anthropic.ToolResultBlockParam[] = [];
-            for (const call of proposeCalls) {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n');
+            buf = lines.pop() ?? '';
+            for (const line of lines) {
+              if (!line.startsWith('data:')) continue;
+              const json = line.slice(5).trim();
+              if (!json) continue;
+              let chunk;
               try {
-                const pid = await createProposalFromTool(
-                  tripId,
-                  call.name,
-                  call.input as never
-                );
+                chunk = JSON.parse(json);
+              } catch {
+                continue;
+              }
+              const parts: GeminiPart[] = chunk?.candidates?.[0]?.content?.parts ?? [];
+              for (const p of parts) {
+                if (p.text) {
+                  turnText += p.text;
+                  assistantText += p.text;
+                  send('delta', { text: p.text });
+                } else if (p.functionCall) {
+                  functionCallParts.push(p); // whole part, incl. thoughtSignature
+                }
+              }
+            }
+          }
+
+          if (functionCallParts.length > 0) {
+            // Echo the model turn (text + function-call parts incl. their
+            // thoughtSignatures) before returning the function responses.
+            contents.push({
+              role: 'model',
+              parts: [...(turnText ? [{ text: turnText }] : []), ...functionCallParts],
+            });
+            const responseParts: GeminiPart[] = [];
+            for (const part of functionCallParts) {
+              const fc = part.functionCall!;
+              try {
+                const pid = await createProposalFromTool(tripId, fc.name, fc.args as never);
                 proposalIds.push(pid);
                 send('proposal', { proposalId: pid });
-                toolResults.push({
-                  type: 'tool_result',
-                  tool_use_id: call.id,
-                  content: 'Proposal created and shown to the user for approval.',
+                responseParts.push({
+                  functionResponse: {
+                    name: fc.name,
+                    response: { result: 'Proposal created and shown to the user for approval.' },
+                  },
                 });
               } catch (e) {
-                toolResults.push({
-                  type: 'tool_result',
-                  tool_use_id: call.id,
-                  content: `Could not create proposal: ${(e as Error).message}`,
-                  is_error: true,
+                responseParts.push({
+                  functionResponse: { name: fc.name, response: { error: (e as Error).message } },
                 });
               }
             }
-            messages.push({ role: 'user', content: toolResults });
+            contents.push({ role: 'user', parts: responseParts });
             continue;
           }
-
-          if (msg.stop_reason === 'pause_turn') continue; // server tool (web search) paused
           break;
         }
 
-        // Persist the assembled assistant message.
         await chatRef.add({
           role: 'assistant',
           content: assistantText,
           proposalIds,
           createdAt: FieldValue.serverTimestamp(),
         });
-
         send('done', { proposalIds });
       } catch (err) {
         send('error', { message: (err as Error).message });

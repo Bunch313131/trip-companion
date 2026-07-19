@@ -145,12 +145,12 @@ export function buildSystemPrompt(context: {
   recent_reservations: Array<{ id: string; type: string; name: string; status: string; starts_at?: string | null }>;
 }): string {
   const stopsList = context.stops
-    .map((s) => `- ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}`)
+    .map((s) => `- [stop_id: ${s.id}] ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}`)
     .join('\n');
 
   const resList = context.recent_reservations
     .slice(0, 10)
-    .map((r) => `- ${r.type}: ${r.name} (${r.status})${r.starts_at ? ` on ${r.starts_at.slice(0, 10)}` : ''}`)
+    .map((r) => `- [reservation_id: ${r.id}] ${r.type}: ${r.name} (${r.status})${r.starts_at ? ` on ${r.starts_at.slice(0, 10)}` : ''}`)
     .join('\n');
 
   return `You are the AI companion for a trip called "${context.trip.name}" (${context.trip.starts_on} to ${context.trip.ends_on}, currently ${context.trip.status}).
@@ -169,9 +169,11 @@ You NEVER modify the trip directly. When the user wants to change something, you
 
 When you propose something, write the summary in a clear editorial voice (short, no marketing language) and the rationale in a paragraph that explains why. The user will see both.
 
+To update or remove an existing stop, activity, or reservation, pass its id (the stop_id / reservation_id shown in brackets above) in the tool call. To add an activity or reservation to a stop, pass that stop's stop_id. For a brand-new stop you don't need an id. Put the concrete field values in the tool's "changes" object.
+
 ## Rules for information
 
-Use web_search aggressively for anything that could have changed since your knowledge cutoff or that requires current info: weather, ticket availability, hours, prices, restaurant recommendations. Never guess about the present. Cite sources.
+You do not have live web access. For time-sensitive specifics — current weather, ticket availability, opening hours, prices — don't invent numbers. Share your best general knowledge, flag what should be verified, and point the user to the official source to confirm.
 
 ## Voice
 
