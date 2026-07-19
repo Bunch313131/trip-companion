@@ -1,18 +1,42 @@
-import { PhasePlaceholder } from '@/components/ui/phase-placeholder';
+'use client';
+
+import dynamic from 'next/dynamic';
+import { AppHeader } from '@/components/nav/app-header';
+import { useTrip } from '@/lib/trip-context';
+import { useTripCollection, orderBy } from '@/lib/use-collection';
+import type { StopDoc, ReservationDoc } from '@/types/domain';
+
+// MapLibre reads `window` on import, so load the map client-only.
+const RouteMap = dynamic(
+  () => import('@/components/map/route-map').then((m) => m.RouteMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
+      </div>
+    ),
+  }
+);
 
 export default function MapPage() {
+  const { tripId } = useTrip();
+  const { docs: stops } = useTripCollection<StopDoc>(tripId, 'stops', orderBy('orderIdx'));
+  const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
+
+  const bookingCounts = reservations.reduce<Record<string, number>>((acc, r) => {
+    if (r.stopId && r.status !== 'cancelled') acc[r.stopId] = (acc[r.stopId] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
-    <PhasePlaceholder
-      section="Map"
-      title="The route"
-      body="Numbered pins for every stop with a bottom sheet of details. Rendered with MapLibre + MapTiler once the key is set (Phase 2)."
-      phase="Phase 2 · Map"
-      icon={
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-          <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" />
-          <circle cx="12" cy="10" r="2.4" />
-        </svg>
-      }
-    />
+    <>
+      <AppHeader section="Map" />
+      {/* Fill the space between the sticky header and fixed nav. The -mb-24
+          cancels the app column's pb-24 so the map doesn't overflow. */}
+      <div className="-mb-24 h-[calc(100dvh-8.5rem)] w-full overflow-hidden">
+        <RouteMap stops={stops} bookingCounts={bookingCounts} />
+      </div>
+    </>
   );
 }
