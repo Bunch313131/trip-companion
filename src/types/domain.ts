@@ -113,5 +113,43 @@ export type ReservationDoc = {
   updatedAt?: Timestamp;
 };
 
+// ─── Proposals (the hero pattern) ──────────────────────────────────
+export type ProposalEntity = 'stops' | 'activities' | 'reservations';
+
+export type ProposalOperation =
+  | { op: 'create'; entity: ProposalEntity; data: Record<string, unknown> }
+  | { op: 'update'; entity: ProposalEntity; id: string; changes: Record<string, unknown> }
+  | { op: 'delete'; entity: ProposalEntity; id: string };
+
+export type ProposalStatus = 'pending' | 'approved' | 'modified' | 'rejected' | 'superseded';
+
+/** A single field's before/after, for the diff view. */
+export type ProposalDiffRow = { field: string; before?: string | null; after?: string | null };
+
+export type ProposalDoc = {
+  chatMessageId?: string;
+  proposalType: string; // 'stop_add' | 'stop_update' | 'activity_add' | ...
+  summary: string;
+  rationale: string;
+  diff?: ProposalDiffRow[]; // human-readable before→after for display
+  operations: ProposalOperation[];
+  status: ProposalStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: Timestamp | null;
+  createdBy?: string; // 'assistant'
+  createdAt?: Timestamp;
+};
+
+export type ChatRole = 'user' | 'assistant' | 'system';
+
+export type ChatMessageDoc = {
+  role: ChatRole;
+  userId?: string | null;
+  content: string;
+  citations?: Array<{ title?: string; url: string }> | null;
+  proposalIds?: string[] | null;
+  createdAt?: Timestamp;
+};
+
 /** A document plus its Firestore id. */
 export type WithId<T> = T & { id: string };
