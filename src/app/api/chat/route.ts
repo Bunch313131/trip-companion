@@ -8,8 +8,11 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 // Gemini free tier: function calling works; Google Search grounding needs a
-// paid tier, so it's omitted. gemini-flash-latest tracks the current Flash.
-const MODEL = 'gemini-flash-latest';
+// paid tier, so it's omitted. flash-lite + thinking disabled keeps chat
+// responses sub-second (the full flash model's default "high" thinking took
+// 30–80s per reply — unusable for chat).
+const MODEL = 'gemini-flash-lite-latest';
+const GENERATION_CONFIG = { thinkingConfig: { thinkingBudget: 0 } };
 
 // propose_* tools become Gemini function declarations; they create proposals.
 const FUNCTION_DECLARATIONS = AI_TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => ({
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemText }] },
               tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+              generationConfig: GENERATION_CONFIG,
               contents,
             }),
           });
