@@ -39,10 +39,15 @@ export default function ItineraryPage() {
       <main className="px-5 py-5">
         {/* Summary line */}
         {trip && visibleStops.length > 0 && (
-          <p className="mb-4 text-xs text-text-dim">
-            {visibleStops.length} stops · {dateRange(trip.startsOn, trip.endsOn)} ·{' '}
-            <span className="text-confirmed">{confirmedCount} confirmed</span>
-          </p>
+          <div className="mb-4">
+            <p className="text-xs text-text-dim">
+              {visibleStops.length} stops · {dateRange(trip.startsOn, trip.endsOn)} ·{' '}
+              <span className="text-confirmed">{confirmedCount} confirmed</span>
+            </p>
+            <p className="mt-0.5 text-[11px] text-text-mute">
+              Tap any underlined field or the status pill to edit.
+            </p>
+          </div>
         )}
 
         {visibleStops.length === 0 ? (

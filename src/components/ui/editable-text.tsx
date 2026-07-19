@@ -85,7 +85,7 @@ export function EditableText({
         type="button"
         aria-label={ariaLabel}
         onClick={() => setEditing(true)}
-        className={`-mx-1 rounded px-1 text-left transition-colors hover:bg-surface-2 ${displayClassName}`}
+        className={`-mx-1 rounded px-1 text-left decoration-dotted decoration-text-mute/50 underline-offset-[3px] transition-colors hover:bg-surface-2 hover:decoration-primary [text-decoration-line:underline] ${displayClassName}`}
       >
         {displayValue ?? (value || <span className="text-text-mute">{placeholder}</span>)}
       </button>
