@@ -1,5 +1,11 @@
+'use client';
+
+import { StatusSelect } from '@/components/ui/status-select';
 import { StatusPill } from '@/components/ui/status-pill';
+import { EditableText } from '@/components/ui/editable-text';
 import { flag, dateRange, nights, fmtDateTime, money } from '@/lib/format';
+import { patchStop } from '@/lib/mutations';
+import { useAuth } from '@/lib/auth-context';
 import type { StopDoc, ActivityDoc, ReservationDoc, WithId } from '@/types/domain';
 
 const STATUS_DOT: Record<string, string> = {
@@ -22,17 +28,40 @@ const RES_ICON: Record<string, string> = {
   other: 'M4 4h16v16H4z',
 };
 
+const STOP_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'tentative', label: 'Tentative' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+function shortDate(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export function StopCard({
   stop,
   index,
   activities,
   reservations,
+  tripId,
 }: {
   stop: WithId<StopDoc>;
   index: number;
   activities: WithId<ActivityDoc>[];
   reservations: WithId<ReservationDoc>[];
+  tripId: string;
 }) {
+  const { user } = useAuth();
+  const uid = user?.uid ?? '';
+  const editable = !!uid;
+
+  const save = (changes: Record<string, unknown>) => patchStop(tripId, stop.id, uid, changes);
+
   const visibleActs = activities
     .filter((a) => a.status !== 'cancelled')
     .sort((a, b) => (a.startsAt?.seconds ?? Infinity) - (b.startsAt?.seconds ?? Infinity));
@@ -52,26 +81,72 @@ export function StopCard({
           >
             {index}
           </span>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-display text-base font-semibold text-text">
-              {stop.city} <span className="ml-0.5">{flag(stop.country)}</span>
+              <EditableText
+                value={stop.city}
+                onSave={(v) => save({ city: v })}
+                editable={editable}
+                ariaLabel="City"
+                displayClassName="font-display text-base font-semibold"
+                placeholder="City"
+              />
+              <span className="ml-0.5">{flag(stop.country)}</span>
             </h3>
-            <p className="mt-0.5 text-xs text-text-dim">
-              {dateRange(stop.arriveOn, stop.departOn)} ·{' '}
-              <span className="tnum">{nights(stop.arriveOn, stop.departOn)}</span> nights
-              {stop.region ? ` · ${stop.region}` : ''}
-            </p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-text-dim">
+              <EditableText
+                value={stop.arriveOn}
+                displayValue={shortDate(stop.arriveOn)}
+                variant="date"
+                onSave={(v) => save({ arriveOn: v })}
+                editable={editable}
+                ariaLabel="Arrival date"
+                className="text-xs"
+              />
+              <span>–</span>
+              <EditableText
+                value={stop.departOn}
+                displayValue={shortDate(stop.departOn)}
+                variant="date"
+                onSave={(v) => save({ departOn: v })}
+                editable={editable}
+                ariaLabel="Departure date"
+                className="text-xs"
+              />
+              <span>
+                · <span className="tnum">{nights(stop.arriveOn, stop.departOn)}</span> nights ·
+              </span>
+              <EditableText
+                value={stop.region ?? ''}
+                onSave={(v) => save({ region: v })}
+                editable={editable}
+                ariaLabel="Region"
+                placeholder="Region"
+              />
+            </div>
           </div>
         </div>
-        <StatusPill status={stop.status} />
+        <StatusSelect
+          value={stop.status}
+          options={STOP_STATUS_OPTIONS}
+          onSelect={(v) => save({ status: v })}
+          editable={editable}
+        />
       </div>
 
       {/* Notes (lodging / parking often live here) */}
-      {stop.notes && (
-        <p className="mt-3 whitespace-pre-line text-xs leading-relaxed text-text-dim">
-          {stop.notes}
-        </p>
-      )}
+      <div className="mt-3 text-xs leading-relaxed text-text-dim">
+        <EditableText
+          value={stop.notes ?? ''}
+          onSave={(v) => save({ notes: v })}
+          variant="textarea"
+          editable={editable}
+          ariaLabel="Notes"
+          placeholder="Add notes — lodging, parking, reminders…"
+          displayClassName="block whitespace-pre-line"
+          className="text-xs"
+        />
+      </div>
 
       {/* Reservations for this stop */}
       {visibleRes.length > 0 && (
@@ -128,3 +203,6 @@ export function StopCard({
     </article>
   );
 }
+
+// Keep the read-only pill export path available for non-editable contexts.
+export { StatusPill };

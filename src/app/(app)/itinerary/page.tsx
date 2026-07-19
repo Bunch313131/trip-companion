@@ -59,6 +59,7 @@ export default function ItineraryPage() {
                 key={stop.id}
                 stop={stop}
                 index={i + 1}
+                tripId={tripId!}
                 activities={activities.filter((a) => a.stopId === stop.id)}
                 reservations={reservations.filter((r) => r.stopId === stop.id)}
               />
