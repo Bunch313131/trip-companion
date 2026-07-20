@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { weatherCode, cToF, type WeatherResponse, type WeatherDay } from '@/lib/weather';
+import { WeatherDetail } from '@/components/today/weather-detail';
 
 /**
- * Weather front-and-center on Today. Fetches Open-Meteo (free, key-less) for a
- * stop's coordinates and shows the forecast for `dateISO`. Renders nothing
- * until data arrives; shows a gentle note if the date is beyond the forecast
- * horizon (Open-Meteo only reaches ~16 days out).
+ * Weather front-and-center on Today. Shows a single day at a glance; tap it to
+ * open the full detail view (current, hourly, 7-day). Renders nothing until
+ * data arrives; a gentle note if the date is beyond the forecast horizon.
  */
 export function WeatherCard({
   lat,
@@ -21,6 +21,7 @@ export function WeatherCard({
   label?: string;
 }) {
   const [state, setState] = useState<{ day: WeatherDay | null; outOfRange: boolean } | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -48,13 +49,21 @@ export function WeatherCard({
   }
 
   if (!state.day) {
-    // Beyond forecast range — don't clutter; a quiet note only.
+    // Beyond forecast range — still let them peek at the near-term forecast.
     return (
-      <section className="rounded-card border border-border bg-surface px-4 py-3 shadow-card">
-        <p className="text-xs text-text-mute">
-          Forecast for {label ?? 'your destination'} appears as the day gets closer.
-        </p>
-      </section>
+      <>
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="w-full rounded-card border border-border bg-surface px-4 py-3 text-left shadow-card transition-colors hover:border-primary/40"
+        >
+          <p className="text-xs text-text-mute">
+            Forecast for {label ?? 'your destination'} appears as the day gets closer — tap for the
+            week ahead.
+          </p>
+        </button>
+        <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} />
+      </>
     );
   }
 
@@ -62,30 +71,50 @@ export function WeatherCard({
   const wx = weatherCode(day.code);
 
   return (
-    <section className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 shadow-card">
-      <span className="text-4xl leading-none" aria-hidden>
-        {wx.emoji}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <p className="font-display text-2xl font-bold text-text">
-            {cToF(day.tempMax)}°
-            <span className="ml-1 align-middle text-sm font-medium text-text-mute">
-              / {cToF(day.tempMin)}°F
-            </span>
+    <>
+      <button
+        type="button"
+        onClick={() => setDetailOpen(true)}
+        className="flex w-full items-center gap-4 rounded-card border border-border bg-surface p-4 text-left shadow-card transition-colors hover:border-primary/40"
+      >
+        <span className="text-4xl leading-none" aria-hidden>
+          {wx.emoji}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <p className="font-display text-2xl font-bold text-text">
+              {cToF(day.tempMax)}°
+              <span className="ml-1 align-middle text-sm font-medium text-text-mute">
+                / {cToF(day.tempMin)}°F
+              </span>
+            </p>
+          </div>
+          <p className="text-sm text-text-dim">
+            {wx.label}
+            {label ? ` · ${label}` : ''}
           </p>
         </div>
-        <p className="text-sm text-text-dim">
-          {wx.label}
-          {label ? ` · ${label}` : ''}
-        </p>
-      </div>
-      {day.precipProb != null && day.precipProb >= 20 && (
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-semibold text-primary">💧 {day.precipProb}%</p>
-          <p className="text-[10px] text-text-mute">rain</p>
-        </div>
-      )}
-    </section>
+        {day.precipProb != null && day.precipProb >= 20 && (
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-semibold text-primary">💧 {day.precipProb}%</p>
+            <p className="text-[10px] text-text-mute">rain</p>
+          </div>
+        )}
+        <svg
+          className="shrink-0 text-text-mute"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+      <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} />
+    </>
   );
 }

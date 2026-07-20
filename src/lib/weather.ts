@@ -61,6 +61,14 @@ export type WeatherDay = {
   tempMax: number; // °C
   tempMin: number; // °C
   precipProb: number | null; // %
+  // Extras, present only in detail mode:
+  precipSum?: number | null; // mm
+  windMax?: number | null; // km/h
+  uvMax?: number | null;
+  sunrise?: string | null; // ISO local
+  sunset?: string | null; // ISO local
+  feelsMax?: number | null; // °C
+  feelsMin?: number | null; // °C
 };
 
 export type WeatherResponse = {
@@ -69,6 +77,40 @@ export type WeatherResponse = {
   outOfRange?: boolean;
 };
 
+export type WeatherHour = {
+  time: string; // ISO local
+  temp: number; // °C
+  precipProb: number | null; // %
+  code: number;
+};
+
+/** Richer payload for the tap-through detail view. */
+export type WeatherDetailResponse = {
+  days: WeatherDay[];
+  hours: WeatherHour[];
+  current: { temp: number; feels: number; code: number } | null;
+  timezone: string;
+  outOfRange?: boolean;
+};
+
 export function cToF(c: number): number {
   return Math.round((c * 9) / 5 + 32);
+}
+
+export function kmhToMph(kmh: number): number {
+  return Math.round(kmh * 0.621371);
+}
+
+/** "3 PM" from an ISO local time string (no timezone conversion — Open-Meteo
+ *  already returns times in the location's zone). */
+export function fmtHour(iso: string): string {
+  const h = Number(iso.slice(11, 13));
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12} ${ampm}`;
+}
+
+/** "Mon" from a YYYY-MM-DD string, in local calendar terms. */
+export function fmtDow(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
 }
