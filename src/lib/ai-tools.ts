@@ -120,6 +120,37 @@ export const AI_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'propose_reminder',
+    description:
+      "Propose a reminder — a small thing to remember at the right moment (e.g. questions to ask at the rental-car desk, things to keep in the cabin bag). Use whenever the user says 'remind me', 'don't let me forget', or shares a tip to resurface later. Anchor it to a day (date) and/or a stop when relevant; use standing:true for trip-wide reminders with no single day. Always propose — never create directly.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        operation: { type: 'string', enum: ['add', 'update', 'remove'] },
+        reminder_id: { type: 'string' },
+        stop_id: { type: 'string', description: 'Optional — anchor to a stop.' },
+        summary: { type: 'string' },
+        rationale: { type: 'string' },
+        changes: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: 'Short label, e.g. "Rental car pickup".' },
+            text: { type: 'string', description: 'The reminder detail or checklist.' },
+            date: {
+              type: 'string',
+              description: 'YYYY-MM-DD — the day it should surface. Omit for a standing reminder.',
+            },
+            standing: {
+              type: 'boolean',
+              description: 'True for a trip-wide reminder with no single day (e.g. cabin-bag checklist).',
+            },
+          },
+        },
+      },
+      required: ['operation', 'summary', 'rationale'],
+    },
+  },
+  {
     name: 'web_search',
     description:
       'Search the web for current information (weather, opening hours, ticket availability, restaurant recommendations, etc.). Use aggressively — never assume; verify.',
@@ -156,6 +187,7 @@ export function buildSystemPrompt(context: {
   }>;
   activities?: Array<{ id: string; title: string; kind: string; status: string; starts_at?: string | null; stop_id?: string | null }>;
   open_items?: Array<{ kind: string; description: string; priority: string; scope: string }>;
+  reminders?: Array<{ id: string; title?: string | null; text: string; dateISO?: string | null; standing?: boolean }>;
   weather?: string | null;
 }): string {
   const stopsList = context.stops
@@ -183,6 +215,13 @@ export function buildSystemPrompt(context: {
 
   const openList = (context.open_items ?? [])
     .map((o) => `- [${o.kind}] ${o.description} (${o.priority} priority · ${o.scope})`)
+    .join('\n');
+
+  const remList = (context.reminders ?? [])
+    .map(
+      (r) =>
+        `- [reminder_id: ${r.id}] ${r.dateISO ? r.dateISO : r.standing ? 'anytime' : '—'}: ${r.title ? `${r.title} — ` : ''}${r.text}`
+    )
     .join('\n');
 
   // The detailed day-by-day plan, grouped by date so the model can reason about
@@ -234,6 +273,10 @@ ${context.weather || '(forecast not available right now)'}
 
 ## Needs attention (open to-dos on this trip)
 ${openList || '(nothing open)'}
+
+## Reminders (small things to remember, surfaced at the right time)
+${remList || '(none yet)'}
+When the user says "remind me", "don't let me forget", or shares a tip to resurface (questions for the rental desk, what to pack in the cabin bag, etc.), capture it with propose_reminder — anchor it to the right day/stop, or standing:true if it has no single day.
 
 ## Rules for changing the trip
 

@@ -68,11 +68,21 @@ export async function POST(request: Request) {
   const db = adminDb();
   const targetISO = date || todayISO(tz);
 
-  const [stopsSnap, resSnap, actSnap] = await Promise.all([
+  const [stopsSnap, resSnap, actSnap, remSnap] = await Promise.all([
     db.collection(`trips/${tripId}/stops`).get(),
     db.collection(`trips/${tripId}/reservations`).get(),
     db.collection(`trips/${tripId}/activities`).get(),
+    db.collection(`trips/${tripId}/reminders`).get(),
   ]);
+
+  // Reminders due today (dated for today-or-earlier, or standing) and not done.
+  const reminders = remSnap.docs
+    .map((d) => d.data())
+    .filter((r) => !r.done && ((r.dateISO && r.dateISO <= targetISO) || r.standing))
+    .map((r) => `${r.title ? `${r.title}: ` : ''}${r.text}`);
+  const remindersText = reminders.length
+    ? `Reminders for today:\n${reminders.map((r) => `- ${r}`).join('\n')}`
+    : '';
 
   const stops = stopsSnap.docs.map(
     (d) => ({ id: d.id, ...d.data() }) as Record<string, unknown> & { id: string }
@@ -168,7 +178,9 @@ export async function POST(request: Request) {
 
   // Deterministic fallback narrative — always correct, no AI required.
   const stopName = (currentStop?.city as string) || 'your destination';
-  const fallback = buildFallback(stopName, events, leaveBy, weatherLine, tz);
+  const fallback =
+    buildFallback(stopName, events, leaveBy, weatherLine, tz) +
+    (reminders.length ? ` Don't forget: ${reminders.join('; ')}.` : '');
 
   const KEY = process.env.GEMINI_API_KEY?.trim();
   if (!KEY || events.length === 0) {
@@ -186,8 +198,9 @@ ${scheduleText || '- Open day, nothing scheduled'}
 
 ${weatherLine}
 ${leaveBy ? `They should aim to head out by about ${leaveBy} for the first item.` : ''}
+${remindersText}
 
-Mention the leave-by time naturally if there is one, note the weather briefly if relevant (umbrella/sunscreen for the kids). If a rain window is given, suggest ordering the day around it — do outdoor things (viewpoints, walks, boat/mountain) before the rain and save indoor stops for during it. Remind them if a ticket is attached for something. Keep it friendly and practical. Plain text only.`;
+Mention the leave-by time naturally if there is one, note the weather briefly if relevant (umbrella/sunscreen for the kids). If a rain window is given, suggest ordering the day around it — do outdoor things (viewpoints, walks, boat/mountain) before the rain and save indoor stops for during it. Work in any reminders for today naturally (e.g. what to ask at a pickup, what to grab). Remind them if a ticket is attached for something. Keep it friendly and practical. Plain text only.`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${KEY}`;

@@ -119,8 +119,21 @@ export type ReservationDoc = {
   updatedAt?: Timestamp;
 };
 
+// ─── Reminders (small things to remember, surfaced at the right time) ──
+export type ReminderDoc = {
+  title?: string | null; // short label, e.g. "Rental car pickup"
+  text: string; // the detail / checklist
+  dateISO?: string | null; // YYYY-MM-DD day it surfaces; null = standing
+  standing?: boolean; // trip-wide, no single day
+  stopId?: string | null;
+  done: boolean;
+  lastEditedBy: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
 // ─── Proposals (the hero pattern) ──────────────────────────────────
-export type ProposalEntity = 'stops' | 'activities' | 'reservations';
+export type ProposalEntity = 'stops' | 'activities' | 'reservations' | 'reminders';
 
 export type ProposalOperation =
   | { op: 'create'; entity: ProposalEntity; data: Record<string, unknown> }

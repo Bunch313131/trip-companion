@@ -14,6 +14,7 @@ type ToolInput = {
   stop_id?: string;
   activity_id?: string;
   reservation_id?: string;
+  reminder_id?: string;
   summary: string;
   rationale: string;
   changes?: Record<string, unknown>;
@@ -40,6 +41,10 @@ const FIELD_MAP: Record<string, { key: string; ts?: boolean }> = {
   provider: { key: 'provider' },
   cost_cents: { key: 'costCents' },
   cost_currency: { key: 'costCurrency' },
+  // reminders
+  text: { key: 'text' },
+  date: { key: 'dateISO' },
+  standing: { key: 'standing' },
 };
 
 function mapChanges(changes: Record<string, unknown> = {}): {
@@ -70,6 +75,7 @@ const TOOL_ENTITY: Record<string, ProposalEntity> = {
   propose_stop_change: 'stops',
   propose_activity: 'activities',
   propose_reservation: 'reservations',
+  propose_reminder: 'reminders',
 };
 
 /** Create a proposal directly from a set of operations (e.g. document import). */
@@ -108,13 +114,23 @@ export async function createProposalFromTool(
 ): Promise<string> {
   const entity = TOOL_ENTITY[toolName] ?? 'stops';
   const idField =
-    entity === 'stops' ? input.stop_id : entity === 'activities' ? input.activity_id : input.reservation_id;
+    entity === 'stops'
+      ? input.stop_id
+      : entity === 'activities'
+        ? input.activity_id
+        : entity === 'reminders'
+          ? input.reminder_id
+          : input.reservation_id;
 
   const { data, diff } = mapChanges(input.changes);
 
-  // For add operations on activities/reservations, carry the stopId link.
+  // For add operations on activities/reservations/reminders, carry the stopId link.
   if (input.operation === 'add' && entity !== 'stops' && input.stop_id) {
     data.stopId = input.stop_id;
+  }
+  // New reminders start not-done.
+  if (input.operation === 'add' && entity === 'reminders') {
+    data.done = false;
   }
 
   let operations: ProposalOperation[];

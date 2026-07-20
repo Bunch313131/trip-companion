@@ -10,6 +10,8 @@ import { MorningBriefing } from '@/components/today/morning-briefing';
 import { LocationBar } from '@/components/today/location-bar';
 import { TodayTickets, type TicketRef } from '@/components/today/today-tickets';
 import { TomorrowPeek } from '@/components/today/tomorrow-peek';
+import { RemindersCard } from '@/components/today/reminders-card';
+import { ReminderForm } from '@/components/reminders/reminder-form';
 import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
 import { EventDetail, type EventSelection } from '@/components/schedule/event-detail';
 import { prettyScope } from '@/components/open-items/open-item-row';
@@ -17,7 +19,7 @@ import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { flag } from '@/lib/format';
 import { toISODate, getCurrentStop, tripDayNumber, totalTripDays, fmtTime, fmtDayLabel } from '@/lib/trip-logic';
-import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc } from '@/types/domain';
+import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc, ReminderDoc, WithId } from '@/types/domain';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
@@ -36,11 +38,16 @@ export default function TodayPage() {
   const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
   const { docs: activities } = useTripCollection<ActivityDoc>(tripId, 'activities');
   const { docs: openItems } = useTripCollection<OpenItemDoc>(tripId, 'openItems');
+  const { docs: reminders } = useTripCollection<ReminderDoc>(tripId, 'reminders');
 
   // ?date=YYYY-MM-DD previews any trip day (great before departure).
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   // Drill-in detail sheet for a tapped schedule row.
   const [selection, setSelection] = useState<EventSelection | null>(null);
+  // Reminder add/edit sheet.
+  const [reminderForm, setReminderForm] = useState<{ existing: WithId<ReminderDoc> | null } | null>(
+    null
+  );
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get('date');
     if (p) setDateOverride(p);
@@ -239,6 +246,14 @@ export default function TodayPage() {
 
             <NeedsAttention openTop={openTop} />
 
+            <RemindersCard
+              tripId={tripId!}
+              reminders={reminders}
+              todayISO={todayISO}
+              onAdd={() => setReminderForm({ existing: null })}
+              onEdit={(r) => setReminderForm({ existing: r })}
+            />
+
             <section className="rounded-card border border-border bg-surface p-4 shadow-card">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-display text-sm font-semibold text-text">Next to book</h2>
@@ -311,6 +326,14 @@ export default function TodayPage() {
 
             <TodayTickets tickets={todayTickets} />
 
+            <RemindersCard
+              tripId={tripId!}
+              reminders={reminders}
+              todayISO={todayISO}
+              onAdd={() => setReminderForm({ existing: null })}
+              onEdit={(r) => setReminderForm({ existing: r })}
+            />
+
             <section className="rounded-card border border-border bg-surface p-4 shadow-card">
               <h2 className="mb-2 font-display text-sm font-semibold text-text">Today&apos;s schedule</h2>
               {todayEvents.length === 0 ? (
@@ -369,6 +392,16 @@ export default function TodayPage() {
       </main>
 
       <EventDetail selection={selection} onClose={() => setSelection(null)} />
+
+      {reminderForm && tripId && (
+        <ReminderForm
+          open
+          onClose={() => setReminderForm(null)}
+          tripId={tripId}
+          stops={stops}
+          existing={reminderForm.existing}
+        />
+      )}
     </>
   );
 }

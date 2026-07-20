@@ -70,12 +70,13 @@ async function weatherSummary(stops: StopLite[], today: string): Promise<string 
  */
 export async function buildTripSystemPrompt(tripId: string): Promise<string> {
   const db = adminDb();
-  const [tripSnap, stopsSnap, resSnap, actSnap, openSnap] = await Promise.all([
+  const [tripSnap, stopsSnap, resSnap, actSnap, openSnap, remSnap] = await Promise.all([
     db.doc(`trips/${tripId}`).get(),
     db.collection(`trips/${tripId}/stops`).orderBy('orderIdx').get(),
     db.collection(`trips/${tripId}/reservations`).get(),
     db.collection(`trips/${tripId}/activities`).get(),
     db.collection(`trips/${tripId}/openItems`).get(),
+    db.collection(`trips/${tripId}/reminders`).get(),
   ]);
 
   const trip = tripSnap.data() ?? {};
@@ -150,6 +151,20 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
     })
     .filter((o) => o.status !== 'resolved');
 
+  const reminders = remSnap.docs
+    .map((d) => {
+      const r = d.data();
+      return {
+        id: d.id,
+        title: (r.title as string) ?? null,
+        text: r.text as string,
+        dateISO: (r.dateISO as string) ?? null,
+        standing: !!r.standing,
+        done: !!r.done,
+      };
+    })
+    .filter((r) => !r.done);
+
   const weather = await weatherSummary(stops, today);
 
   return buildSystemPrompt({
@@ -166,6 +181,7 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
     recent_reservations,
     activities,
     open_items,
+    reminders,
     weather,
   });
 }

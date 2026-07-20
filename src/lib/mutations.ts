@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   type DocumentReference,
 } from 'firebase/firestore';
@@ -85,6 +86,20 @@ export function patchOpenItem(
   changes: Record<string, unknown>
 ) {
   return updateDoc(doc(getClientDb(), 'trips', tripId, 'openItems', id), stamp(changes, uid));
+}
+
+export function patchReminder(
+  tripId: string,
+  id: string,
+  uid: string,
+  changes: Record<string, unknown>
+) {
+  return updateDoc(doc(getClientDb(), 'trips', tripId, 'reminders', id), stamp(changes, uid));
+}
+
+/** Hard-remove a reminder (they're lightweight and not AI-referenced by id). */
+export function deleteReminder(tripId: string, id: string) {
+  return deleteDoc(doc(getClientDb(), 'trips', tripId, 'reminders', id));
 }
 
 /** Generic create helper for a new doc in any subcollection (returns id). */
