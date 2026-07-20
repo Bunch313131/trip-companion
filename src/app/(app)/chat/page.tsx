@@ -7,6 +7,7 @@ import { ChatMessage, StreamingMessage } from '@/components/chat/message';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useTrip } from '@/lib/trip-context';
 import { useAuth } from '@/lib/auth-context';
+import { useKeyboardOpen } from '@/lib/use-keyboard';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { getTripPhase } from '@/lib/constants';
 import type { ChatMessageDoc, ProposalDoc, WithId } from '@/types/domain';
@@ -31,6 +32,7 @@ export default function ChatPage() {
   const [deepMode, setDeepMode] = useState(false);
   const [optimisticUser, setOptimisticUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const keyboardOpen = useKeyboardOpen();
 
   const today = new Date().toISOString().slice(0, 10);
   const phase = getTripPhase(today);
@@ -99,7 +101,17 @@ export default function ChatPage() {
   return (
     <>
       <AppHeader section="Chat" />
-      <div className="-mb-24 flex h-[calc(100dvh-7rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col">
+      <div
+        className="-mb-24 flex flex-col"
+        style={{
+          // When the keyboard is up the nav hides, so reclaim its space; the
+          // input then sits directly above the keyboard. Otherwise clear the
+          // (shrunk) bottom nav plus both safe-area insets.
+          height: keyboardOpen
+            ? 'calc(100dvh - 3.5rem - env(safe-area-inset-top))'
+            : 'calc(100dvh - 6.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+        }}
+      >
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           <div className="mx-auto w-full max-w-lg space-y-4">
             {empty ? (
