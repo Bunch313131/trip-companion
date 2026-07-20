@@ -49,7 +49,9 @@ export async function POST(request: Request) {
     return Response.json({ error: (err as Error).message }, { status: 403 });
   }
 
-  const KEY = process.env.GEMINI_API_KEY;
+  // Trim: env values pasted into dashboards often carry a trailing newline,
+  // which makes the API key invalid.
+  const KEY = process.env.GEMINI_API_KEY?.trim();
   if (!KEY) return Response.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 503 });
 
   const db = adminDb();
