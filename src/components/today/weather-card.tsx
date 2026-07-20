@@ -116,7 +116,7 @@ export function WeatherCard({
           <path d="M9 6l6 6-6 6" />
         </svg>
       </button>
-      <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} />
+      <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} tripStops={tripStops} />
     </>
   );
 }
