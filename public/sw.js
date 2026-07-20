@@ -10,7 +10,7 @@
  * Bump CACHE_VERSION to invalidate old caches on deploy.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = `trip-companion-${CACHE_VERSION}`;
 const OFFLINE_FALLBACK = '/';
 
