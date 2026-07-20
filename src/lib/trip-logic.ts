@@ -5,6 +5,15 @@
 
 type Timestampish = { toDate: () => Date; seconds?: number } | null | undefined;
 
+/**
+ * The trip's timezone. Germany, France, and Switzerland are all Central
+ * European Time, so every scheduled time is shown in this zone regardless of
+ * where the phone is — a 9:38 boat reads "9:38 AM" whether you're viewing from
+ * California or standing in Lucerne. Without this, times render in the device
+ * zone and look hours off when planning from home.
+ */
+export const TRIP_TZ = 'Europe/Berlin';
+
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
@@ -25,11 +34,18 @@ export function stopDays(arriveOn: string, departOn: string): string[] {
   return days;
 }
 
-/** ISO date (local) of a Firestore Timestamp. */
+/** ISO date of a Firestore Timestamp, as seen in the trip's timezone — so an
+ *  event buckets to the calendar day the traveler actually experiences it. */
 export function isoDateOf(ts: Timestampish): string | null {
   if (!ts?.toDate) return null;
   try {
-    return toISODate(ts.toDate());
+    // en-CA formats as YYYY-MM-DD.
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: TRIP_TZ,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(ts.toDate());
   } catch {
     return null;
   }
@@ -38,7 +54,11 @@ export function isoDateOf(ts: Timestampish): string | null {
 export function fmtTime(ts: Timestampish): string | null {
   if (!ts?.toDate) return null;
   try {
-    return ts.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return ts.toDate().toLocaleTimeString('en-US', {
+      timeZone: TRIP_TZ,
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   } catch {
     return null;
   }

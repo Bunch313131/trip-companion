@@ -1,5 +1,7 @@
 /** Shared formatting helpers for dates, nights, flags, and money. */
 
+import { TRIP_TZ } from '@/lib/trip-logic';
+
 /** ISO alpha-2 country code → flag emoji (e.g. "FR" → 🇫🇷). */
 export function flag(countryCode?: string): string {
   if (!countryCode || countryCode.length !== 2) return '';
@@ -38,9 +40,11 @@ export function fmtDateTime(
   if (!ts) return null;
   try {
     const d = ts.toDate();
-    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Show in the trip's timezone (Central European Time) so bookings read the
+    // same whether viewed from home or on the ground. See TRIP_TZ.
+    const date = d.toLocaleDateString('en-US', { timeZone: TRIP_TZ, month: 'short', day: 'numeric' });
     if (!opts.time) return date;
-    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const time = d.toLocaleTimeString('en-US', { timeZone: TRIP_TZ, hour: 'numeric', minute: '2-digit' });
     return `${date} · ${time}`;
   } catch {
     return null;
