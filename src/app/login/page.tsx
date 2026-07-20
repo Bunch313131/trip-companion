@@ -96,12 +96,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-8">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-ink shadow-card">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" />
-              <circle cx="12" cy="10" r="2.4" />
-            </svg>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/icon-192.png"
+            alt="Trip Companion"
+            className="mx-auto mb-4 h-16 w-16 rounded-2xl shadow-card"
+          />
           <h1 className="font-display text-2xl font-bold tracking-tight text-text">
             Trip Companion
           </h1>
