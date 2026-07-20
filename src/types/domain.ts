@@ -151,5 +151,22 @@ export type ChatMessageDoc = {
   createdAt?: Timestamp;
 };
 
+// ─── Open items (needs-attention checklist) ────────────────────────
+export type OpenItemKind = 'verify' | 'decide' | 'resolve' | 'confirm';
+export type OpenItemPriority = 'high' | 'medium' | 'low';
+
+export type OpenItemDoc = {
+  kind: OpenItemKind;
+  scope: string;
+  priority: OpenItemPriority;
+  description: string;
+  status: 'open' | 'resolved';
+  resolvedBy?: string | null;
+  resolvedAt?: Timestamp | null;
+  lastEditedBy: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
 /** A document plus its Firestore id. */
 export type WithId<T> = T & { id: string };

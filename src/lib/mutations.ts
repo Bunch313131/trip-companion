@@ -77,3 +77,24 @@ export function createDoc(
 export function softDelete(tripId: string, sub: string, id: string, uid: string) {
   return updateDoc(doc(getClientDb(), 'trips', tripId, sub, id), stamp({ status: 'cancelled' }, uid));
 }
+
+export function patchOpenItem(
+  tripId: string,
+  id: string,
+  uid: string,
+  changes: Record<string, unknown>
+) {
+  return updateDoc(doc(getClientDb(), 'trips', tripId, 'openItems', id), stamp(changes, uid));
+}
+
+/** Generic create helper for a new doc in any subcollection (returns id). */
+export async function addToCollection(
+  tripId: string,
+  sub: string,
+  uid: string,
+  data: Record<string, unknown>
+) {
+  const ref = newDocRef(tripId, sub);
+  await createDoc(ref, uid, data);
+  return ref.id;
+}

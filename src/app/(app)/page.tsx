@@ -5,7 +5,10 @@ import { AppHeader } from '@/components/nav/app-header';
 import { Countdown } from '@/components/today/countdown';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
-import type { StopDoc, ReservationDoc } from '@/types/domain';
+import { prettyScope } from '@/components/open-items/open-item-row';
+import type { StopDoc, ReservationDoc, OpenItemDoc } from '@/types/domain';
+
+const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 /**
  * Today / Dashboard — pre-trip variant, live from Firestore.
@@ -37,6 +40,7 @@ export default function TodayPage() {
   const { trip, tripId, loading, empty } = useTrip();
   const { docs: stops } = useTripCollection<StopDoc>(tripId, 'stops', orderBy('orderIdx'));
   const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
+  const { docs: openItems } = useTripCollection<OpenItemDoc>(tripId, 'openItems');
 
   if (loading) {
     return (
@@ -80,6 +84,10 @@ export default function TodayPage() {
 
   const stopById = new Map(stops.map((s) => [s.id, s.city]));
 
+  const openTop = openItems
+    .filter((i) => i.status !== 'resolved')
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
+
   return (
     <>
       <AppHeader section="Today" />
@@ -117,6 +125,35 @@ export default function TodayPage() {
           />
           <StatTile value={`${toBook.length}`} label="Still to book" tone="warning" />
         </section>
+
+        {/* Needs attention (open items) */}
+        {openTop.length > 0 && (
+          <section className="rounded-card border border-border bg-surface p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-sm font-semibold text-text">Needs attention</h2>
+              <Link href="/open-items" className="text-xs font-medium text-primary">
+                {openTop.length > 3 ? `View all ${openTop.length} →` : 'View all →'}
+              </Link>
+            </div>
+            <ul className="space-y-2.5">
+              {openTop.slice(0, 3).map((item) => (
+                <li key={item.id} className="flex items-start gap-2">
+                  <span
+                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+                      item.priority === 'high' ? 'bg-warning' : 'bg-tentative'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug text-text">{item.description}</p>
+                    {prettyScope(item.scope) && (
+                      <p className="text-[11px] text-text-mute">{prettyScope(item.scope)}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Next to book */}
         <section className="rounded-card border border-border bg-surface p-4 shadow-card">
