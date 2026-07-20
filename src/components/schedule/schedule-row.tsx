@@ -1,6 +1,8 @@
 'use client';
 
 import { fmtTime, isoDateOf } from '@/lib/trip-logic';
+import { reservationNavQuery } from '@/lib/maps';
+import { NavigateButton } from '@/components/ui/navigate-button';
 import type { ActivityDoc, ReservationDoc, WithId } from '@/types/domain';
 
 export type ScheduleEvent = {
@@ -13,6 +15,8 @@ export type ScheduleEvent = {
   documentUrl?: string | null;
   isReservation: boolean;
   dateISO: string | null;
+  navQuery?: string | null;
+  kind?: string; // activity kind / reservation type, for the icon
 };
 
 const RES_ICON: Record<string, string> = {
@@ -46,9 +50,9 @@ export function reservationToEvent(r: WithId<ReservationDoc>): ScheduleEvent {
     documentUrl: r.documentUrl ?? null,
     isReservation: true,
     dateISO: isoDateOf(r.startsAt),
-    // icon resolved at render via type below
-    ...({ resType: r.type } as object),
-  } as ScheduleEvent & { resType: string };
+    navQuery: reservationNavQuery(r.type, r.name),
+    kind: r.type,
+  };
 }
 
 export function activityToEvent(a: WithId<ActivityDoc>): ScheduleEvent {
@@ -62,18 +66,24 @@ export function activityToEvent(a: WithId<ActivityDoc>): ScheduleEvent {
     documentUrl: null,
     isReservation: false,
     dateISO: isoDateOf(a.startsAt),
+    navQuery: a.location || a.title,
+    kind: a.kind,
   };
 }
 
-export function ScheduleRow({ event }: { event: ScheduleEvent }) {
-  const resType = (event as ScheduleEvent & { resType?: string }).resType;
+export function ScheduleRow({ event, onClick }: { event: ScheduleEvent; onClick?: () => void }) {
   const iconPath = event.isReservation
-    ? RES_ICON[resType ?? 'other'] ?? RES_ICON.other
+    ? RES_ICON[event.kind ?? 'other'] ?? RES_ICON.other
     : RES_ICON.activity;
   const dimmed = event.status === 'cancelled' || event.status === 'completed';
 
   return (
-    <div className={`flex items-start gap-2.5 py-1.5 ${dimmed ? 'opacity-60' : ''}`}>
+    <div
+      onClick={onClick}
+      className={`flex items-start gap-2.5 rounded-md py-1.5 ${dimmed ? 'opacity-60' : ''} ${
+        onClick ? '-mx-1 cursor-pointer px-1 transition-colors hover:bg-surface-2' : ''
+      }`}
+    >
       {/* Time gutter */}
       <div className="w-14 shrink-0 whitespace-nowrap pt-0.5 text-right">
         {event.time ? (
@@ -99,21 +109,24 @@ export function ScheduleRow({ event }: { event: ScheduleEvent }) {
           <p className={`truncate text-sm ${event.status === 'idea' ? 'text-text-dim' : 'text-text'}`}>
             {event.title}
           </p>
-          {event.documentUrl && (
-            <a
-              href={event.documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="ml-auto inline-flex shrink-0 items-center gap-1 rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-medium text-primary"
-              title="Open document"
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M4 6h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z" />
-              </svg>
-              Ticket
-            </a>
-          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            {event.documentUrl && (
+              <a
+                href={event.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                title="Open document"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path d="M4 6h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z" />
+                </svg>
+                Ticket
+              </a>
+            )}
+            {event.navQuery && <NavigateButton dest={{ query: event.navQuery }} variant="icon" />}
+          </div>
         </div>
         {event.subtitle && <p className="truncate pl-3 text-[11px] text-text-mute">{event.subtitle}</p>}
       </div>

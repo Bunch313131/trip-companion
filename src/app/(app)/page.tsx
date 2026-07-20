@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/nav/app-header';
 import { Countdown } from '@/components/today/countdown';
 import { NextUp } from '@/components/today/next-up';
+import { WeatherCard } from '@/components/today/weather-card';
+import { MorningBriefing } from '@/components/today/morning-briefing';
+import { LocationBar } from '@/components/today/location-bar';
 import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
 import { prettyScope } from '@/components/open-items/open-item-row';
 import { useTrip } from '@/lib/trip-context';
@@ -95,6 +98,19 @@ export default function TodayPage() {
   const dayNum = tripDayNumber(trip.startsOn, todayISO);
   const totalDays = totalTripDays(trip.startsOn, trip.endsOn);
 
+  // Weather target: where you are today (or, before the trip / on travel days,
+  // the next stop you're heading to). Only stops with real coordinates qualify.
+  const geocoded = stops.filter(
+    (s) => s.status !== 'cancelled' && typeof s.lat === 'number' && typeof s.lng === 'number'
+  );
+  const upcomingStop = geocoded
+    .filter((s) => s.departOn >= todayISO)
+    .sort((a, b) => a.arriveOn.localeCompare(b.arriveOn))[0];
+  const weatherStop =
+    currentStop && typeof currentStop.lat === 'number' ? currentStop : upcomingStop;
+  const weatherDate =
+    phase === 'during' ? todayISO : weatherStop ? weatherStop.arriveOn : todayISO;
+
   // Pre-trip status numbers.
   const activeStops = stops.filter((s) => s.status !== 'cancelled');
   const confirmedStops = activeStops.filter((s) => s.status === 'confirmed');
@@ -137,6 +153,15 @@ export default function TodayPage() {
               </div>
               <Countdown startsOn={trip.startsOn} />
             </section>
+
+            {weatherStop && (
+              <WeatherCard
+                lat={weatherStop.lat}
+                lng={weatherStop.lng}
+                dateISO={weatherDate}
+                label={weatherStop.city}
+              />
+            )}
 
             <section className="grid grid-cols-3 gap-3">
               <StatTile value={`${confirmedStops.length}`} label="Stops confirmed" tone="confirmed" />
@@ -201,6 +226,19 @@ export default function TodayPage() {
                 <p className="text-sm text-text-dim">{currentStop.region}</p>
               )}
             </section>
+
+            {weatherStop && (
+              <WeatherCard
+                lat={weatherStop.lat}
+                lng={weatherStop.lng}
+                dateISO={weatherDate}
+                label={currentStop ? undefined : weatherStop.city}
+              />
+            )}
+
+            {tripId && <MorningBriefing tripId={tripId} dateISO={todayISO} />}
+
+            <LocationBar stops={stops} nextNavQuery={nextEvent?.navQuery} />
 
             {nextEvent && <NextUp event={nextEvent} />}
 
