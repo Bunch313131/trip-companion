@@ -149,8 +149,14 @@ export function buildSystemPrompt(context: {
     .map((s) => `- [stop_id: ${s.id}] ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}`)
     .join('\n');
 
-  const resList = context.recent_reservations
-    .slice(0, 10)
+  // Show every booking, ordered by date (undated last), so the model sees all
+  // flight legs, hotels, tickets, etc. — not an arbitrary first-N slice.
+  const resList = [...context.recent_reservations]
+    .sort((a, b) => {
+      if (!a.starts_at) return 1;
+      if (!b.starts_at) return -1;
+      return a.starts_at < b.starts_at ? -1 : 1;
+    })
     .map((r) => `- [reservation_id: ${r.id}] ${r.type}: ${r.name} (${r.status})${r.starts_at ? ` on ${r.starts_at.slice(0, 10)}` : ''}`)
     .join('\n');
 
@@ -187,7 +193,7 @@ Today's date is ${context.today}.
 ## Current itinerary
 ${stopsList}
 
-## Recent reservations
+## Bookings (flights, hotels, tickets, car, restaurants — all of them)
 ${resList || '(none yet)'}
 
 ## Detailed daily schedule
