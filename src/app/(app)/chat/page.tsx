@@ -28,6 +28,7 @@ export default function ChatPage() {
 
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  const [deepMode, setDeepMode] = useState(false);
   const [optimisticUser, setOptimisticUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +50,7 @@ export default function ChatPage() {
     setOptimisticUser(text);
     setStreaming(true);
     setStreamingText('');
+    setDeepMode(false);
     try {
       const token = await user.getIdToken();
       const res = await fetch('/api/chat', {
@@ -77,6 +79,7 @@ export default function ChatPage() {
           const event = evLine.slice(6).trim();
           const data = JSON.parse(dataLine.slice(5).trim());
           if (event === 'delta') setStreamingText((t) => t + data.text);
+          else if (event === 'mode') setDeepMode(data.effort === 'deep');
           else if (event === 'error') throw new Error(data.message);
           // 'proposal' + 'done': the docs arrive via onSnapshot
         }
@@ -86,6 +89,7 @@ export default function ChatPage() {
     } finally {
       setStreaming(false);
       setStreamingText('');
+      setDeepMode(false);
       setOptimisticUser(null);
     }
   }
@@ -130,9 +134,19 @@ export default function ChatPage() {
                     </div>
                   </div>
                 )}
-                {streaming && (
-                  <StreamingMessage text={streamingText || '…'} />
-                )}
+                {streaming &&
+                  (streamingText ? (
+                    <StreamingMessage text={streamingText} />
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-text-mute">
+                      <span className="flex gap-1">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-mute [animation-delay:-0.3s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-mute [animation-delay:-0.15s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-mute" />
+                      </span>
+                      {deepMode && <span>Thinking it through…</span>}
+                    </div>
+                  ))}
               </>
             )}
           </div>

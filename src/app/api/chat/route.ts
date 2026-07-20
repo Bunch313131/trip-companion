@@ -3,16 +3,16 @@ import { adminDb, requireTripAccess } from '@/lib/firebase-admin';
 import { AI_TOOLS } from '@/lib/ai-tools';
 import { buildTripSystemPrompt } from '@/lib/ai/system-prompt';
 import { createProposalFromTool } from '@/lib/ai/create-proposal';
+import { classifyEffort, effortConfig } from '@/lib/ai/effort';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 // Gemini free tier: function calling works; Google Search grounding needs a
-// paid tier, so it's omitted. flash-lite + thinking disabled keeps chat
-// responses sub-second (the full flash model's default "high" thinking took
-// 30–80s per reply — unusable for chat).
+// paid tier, so it's omitted. flash-lite; thinking depth is chosen per message
+// by the effort router (quick = off ~2s, deep = dynamic ~7s). The full flash
+// model's default "high" thinking took 30–80s per reply — unusable for chat.
 const MODEL = 'gemini-flash-lite-latest';
-const GENERATION_CONFIG = { thinkingConfig: { thinkingBudget: 0 } };
 
 // propose_* tools become Gemini function declarations; they create proposals.
 const FUNCTION_DECLARATIONS = AI_TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => ({
@@ -69,6 +69,8 @@ export async function POST(request: Request) {
     }));
 
   const systemText = await buildTripSystemPrompt(tripId);
+  const effort = classifyEffort(message);
+  const generationConfig = effortConfig(effort);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${KEY}`;
 
   const encoder = new TextEncoder();
@@ -81,6 +83,9 @@ export async function POST(request: Request) {
       const proposalIds: string[] = [];
       let assistantText = '';
 
+      // Tell the client which effort level we chose (drives the indicator).
+      send('mode', { effort });
+
       try {
         for (let turn = 0; turn < 6; turn++) {
           const resp = await fetch(url, {
@@ -89,7 +94,7 @@ export async function POST(request: Request) {
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemText }] },
               tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-              generationConfig: GENERATION_CONFIG,
+              generationConfig,
               contents,
             }),
           });
