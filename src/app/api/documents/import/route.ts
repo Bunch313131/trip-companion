@@ -65,8 +65,12 @@ function toTs(iso?: string): Timestamp | null {
   return Number.isNaN(d.getTime()) ? null : Timestamp.fromDate(d);
 }
 
-function opToData(op: ExtractedOp, docFields: { documentUrl: string; documentMime: string }) {
-  const isRes = op.entity === 'reservations';
+function opToData(
+  op: ExtractedOp,
+  entity: ProposalEntity,
+  docFields: { documentUrl: string; documentMime: string }
+) {
+  const isRes = entity === 'reservations';
   const data: Record<string, unknown> = {};
   if (isRes) {
     if (op.type) data.type = op.type;
@@ -171,7 +175,7 @@ STOPS (JSON):
 ${JSON.stringify(stops)}
 
 Read the attached document and extract EVERY booking or leg it contains. A round-trip flight is ONE operation PER leg. For each item:
-- If it clearly matches an existing reservation (same flight number, or same route+date, or same hotel+dates), output action "update" with that reservation's match_id and ONLY the fields to fill in or correct (e.g. confirmation, cost). Do not duplicate existing bookings.
+- If it clearly matches an existing reservation (same flight number, or same route+date, or same hotel+dates), output action "update" with that reservation's match_id. On an update, ALWAYS include the confirmation/booking reference (PNR) and total cost when the document shows them — even if the existing record has a placeholder like "TBD" or is missing them — plus any corrected times. A round-trip ticket usually shares ONE confirmation/PNR across all legs; put that same confirmation on every leg. If there is a single ticket total (not per-leg), put it on the first outbound leg only and leave the other legs' cost empty. Do not duplicate existing bookings.
 - Otherwise output action "create".
 Assign stop_id by matching the item's date to the stop whose date range (arrive_on..depart_on) contains it. Flights/rental cars are trip-wide — leave stop_id empty. If the document implies a specific scheduled activity (a timed tour or entry) that isn't already a booking, you may create an activity (entity "activities") with a title, starts_at, and stop_id. Keep names concise (e.g. "Delta DL1701 SMF→MSP"). cost_cents is the total in minor units. Return only what the document supports.`;
 
@@ -216,7 +220,7 @@ Assign stop_id by matching the item's date to the stop whose date range (arrive_
   const diff: ProposalDiffRow[] = [];
   for (const op of rawOps) {
     const entity = (op.entity === 'activities' ? 'activities' : 'reservations') as ProposalEntity;
-    const data = opToData(op, { documentUrl, documentMime: mime });
+    const data = opToData(op, entity, { documentUrl, documentMime: mime });
     if (op.action === 'update' && op.match_id) {
       operations.push({ op: 'update', entity, id: op.match_id, changes: data });
     } else {
