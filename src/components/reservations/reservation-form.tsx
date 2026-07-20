@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Drawer } from 'vaul';
-import { Timestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Timestamp, type DocumentReference } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { getClientStorage } from '@/lib/firebase-client';
 import { newDocRef, createDoc, patchReservation, softDelete } from '@/lib/mutations';
 import { useAuth } from '@/lib/auth-context';
 import { flag } from '@/lib/format';
@@ -24,9 +22,15 @@ const CURRENCIES = ['EUR', 'USD', 'CHF'];
 
 function tsToLocalInput(ts?: Timestamp | null): string {
   if (!ts?.toDate) return '';
-  const d = ts.toDate();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return dateToInput(ts.toDate());
+}
+function isoToLocalInput(iso: string): string {
+  const d = new Date(iso.length <= 10 ? `${iso}T00:00:00` : iso);
+  return Number.isNaN(d.getTime()) ? '' : dateToInput(d);
+}
+function dateToInput(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 export function ReservationForm({
@@ -56,27 +60,67 @@ export function ReservationForm({
   const [currency, setCurrency] = useState(existing?.costCurrency ?? 'EUR');
   const [status, setStatus] = useState<ReservationDoc['status']>(existing?.status ?? 'to_book');
   const [notes, setNotes] = useState(existing?.notes ?? '');
-  const [file, setFile] = useState<File | null>(null);
+  const [documentUrl, setDocumentUrl] = useState<string | null>(existing?.documentUrl ?? null);
+  const [documentMime, setDocumentMime] = useState<string | null>(existing?.documentMime ?? null);
+  const [parsing, setParsing] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Stable ref for a new reservation so the doc + its storage path share an id.
+  const newRef = useRef<DocumentReference | null>(null);
+  function docRef(): DocumentReference | null {
+    if (editing) return null;
+    if (!newRef.current) newRef.current = newDocRef(tripId, 'reservations');
+    return newRef.current;
+  }
+  const currentDocId = editing ? existing!.id : docRef()!.id;
+
+  async function handleFile(file: File | null) {
+    if (!file || !user) return;
+    setParsing(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('tripId', tripId);
+      fd.append('docId', currentDocId);
+      const token = await user.getIdToken();
+      const res = await fetch('/api/reservations/parse-doc', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+      setDocumentUrl(data.documentUrl);
+      setDocumentMime(data.documentMime);
+
+      const ex = data.extracted as Record<string, string | number> | null;
+      if (ex) {
+        if (typeof ex.type === 'string' && TYPES.includes(ex.type as ReservationDoc['type'])) {
+          setType(ex.type as ReservationDoc['type']);
+        }
+        if (ex.name && !name.trim()) setName(String(ex.name));
+        if (ex.provider && !provider.trim()) setProvider(String(ex.provider));
+        if (ex.confirmation && !confirmation.trim()) setConfirmation(String(ex.confirmation));
+        if (ex.starts_at && !startsAt) setStartsAt(isoToLocalInput(String(ex.starts_at)));
+        if (ex.cost_cents && !cost) setCost(String(Number(ex.cost_cents) / 100));
+        if (ex.cost_currency && !cost) setCurrency(String(ex.cost_currency));
+        toast.success('Filled from your document');
+      } else {
+        toast.success('Document attached');
+      }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setParsing(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !uid) return;
     setBusy(true);
     try {
-      const ref = editing ? null : newDocRef(tripId, 'reservations');
-      const resId = editing ? existing!.id : ref!.id;
-
-      let documentUrl: string | undefined;
-      let documentMime: string | undefined;
-      if (file) {
-        const path = `reservations/${tripId}/${resId}/${file.name}`;
-        const sref = storageRef(getClientStorage(), path);
-        await uploadBytes(sref, file, { contentType: file.type });
-        documentUrl = await getDownloadURL(sref);
-        documentMime = file.type;
-      }
-
       const data: Record<string, unknown> = {
         type,
         name: name.trim(),
@@ -90,12 +134,11 @@ export function ReservationForm({
         notes: notes.trim() || null,
         ...(documentUrl ? { documentUrl, documentMime } : {}),
       };
-
       if (editing) {
         await patchReservation(tripId, existing!.id, uid, data);
         toast.success('Booking updated');
       } else {
-        await createDoc(ref!, uid, data);
+        await createDoc(docRef()!, uid, data);
         toast.success('Booking added');
       }
       onClose();
@@ -131,8 +174,38 @@ export function ReservationForm({
               {editing ? 'Edit booking' : 'Add booking'}
             </Drawer.Title>
 
+            {/* Upload & auto-fill — first, so it can populate the rest */}
+            <div className="mt-4 rounded-lg border border-dashed border-primary/40 bg-primary-soft/40 p-3">
+              <p className="text-xs font-medium text-text">Upload a ticket or confirmation</p>
+              <p className="mb-2 text-[11px] text-text-mute">
+                PDF or photo — the AI reads it and fills in the details below.
+              </p>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                disabled={parsing}
+                onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                className="w-full text-xs text-text-dim file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-ink disabled:opacity-60"
+              />
+              {parsing && (
+                <p className="mt-2 flex items-center gap-2 text-xs text-primary">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/40 border-t-primary" />
+                  Reading document…
+                </p>
+              )}
+              {documentUrl && !parsing && (
+                <a
+                  href={documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-confirmed"
+                >
+                  ✓ Document attached — view
+                </a>
+              )}
+            </div>
+
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              {/* Type segmented control */}
               <div className="flex flex-wrap gap-1.5">
                 {TYPES.map((t) => (
                   <button
@@ -140,9 +213,7 @@ export function ReservationForm({
                     type="button"
                     onClick={() => setType(t)}
                     className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                      type === t
-                        ? 'bg-primary text-primary-ink'
-                        : 'border border-border bg-surface text-text-dim'
+                      type === t ? 'bg-primary text-primary-ink' : 'border border-border bg-surface text-text-dim'
                     }`}
                   >
                     {t}
@@ -151,7 +222,7 @@ export function ReservationForm({
               </div>
 
               <Field label="Name">
-                <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="Hotel Sonne, Delta DL123…" autoFocus />
+                <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="Hotel Sonne, Delta DL123…" />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
@@ -198,17 +269,8 @@ export function ReservationForm({
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} />
               </Field>
 
-              <Field label="Confirmation document (PDF or image)">
-                <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full text-xs text-text-dim file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-xs file:text-text" />
-                {existing?.documentUrl && !file && (
-                  <a href={existing.documentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs text-primary">
-                    View current document
-                  </a>
-                )}
-              </Field>
-
               <div className="flex items-center gap-2 pt-1">
-                <button type="submit" disabled={busy} className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-ink disabled:opacity-60">
+                <button type="submit" disabled={busy || parsing} className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-ink disabled:opacity-60">
                   {busy ? 'Saving…' : editing ? 'Save changes' : 'Add booking'}
                 </button>
                 {editing && (
