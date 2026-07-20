@@ -9,7 +9,14 @@ import {
   fmtHour,
   fmtDow,
   type WeatherDetailResponse,
+  type TripStopForecast,
+  type TripStopInput,
+  type TripWeatherResponse,
 } from '@/lib/weather';
+
+function shortDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 function fmtClock(iso?: string | null): string | null {
   if (!iso) return null;
@@ -40,15 +47,19 @@ export function WeatherDetail({
   lat,
   lng,
   label,
+  tripStops,
 }: {
   open: boolean;
   onClose: () => void;
   lat: number;
   lng: number;
   label?: string;
+  /** Upcoming stops to show in the "across your trip" outlook. */
+  tripStops?: TripStopInput[];
 }) {
   const [data, setData] = useState<WeatherDetailResponse | null>(null);
   const [failed, setFailed] = useState(false);
+  const [trip, setTrip] = useState<TripStopForecast[] | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -67,6 +78,27 @@ export function WeatherDetail({
       alive = false;
     };
   }, [open, lat, lng]);
+
+  useEffect(() => {
+    if (!open || !tripStops?.length) {
+      setTrip(null);
+      return;
+    }
+    let alive = true;
+    fetch('/api/weather/trip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stops: tripStops }),
+    })
+      .then((r) => r.json() as Promise<TripWeatherResponse>)
+      .then((d) => alive && setTrip(d.stops ?? []))
+      .catch(() => alive && setTrip([]));
+    return () => {
+      alive = false;
+    };
+    // Re-run only when the set of stops changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(tripStops)]);
 
   const today = data?.days[0];
   const wx = weatherCode(data?.current?.code ?? today?.code);
@@ -200,7 +232,44 @@ export function WeatherDetail({
                   </div>
                 </div>
 
-                <p className="mt-4 text-center text-[10px] text-text-mute">
+                {/* Across your trip */}
+                {trip && trip.some((s) => s.day) && (
+                  <div className="mt-5">
+                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-mute">
+                      Across your trip
+                    </h3>
+                    <div className="space-y-1">
+                      {trip.map((s) => (
+                        <div key={s.id} className="flex items-center gap-3 py-1">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+                            {s.city}
+                          </span>
+                          <span className="shrink-0 text-xs text-text-mute">{shortDate(s.date)}</span>
+                          {s.day ? (
+                            <>
+                              <span className="w-6 shrink-0 text-center text-base">
+                                {weatherCode(s.day.code).emoji}
+                              </span>
+                              <span className="w-9 shrink-0 text-right text-[11px] text-primary">
+                                {s.day.precipProb != null && s.day.precipProb >= 10
+                                  ? `${s.day.precipProb}%`
+                                  : ''}
+                              </span>
+                              <span className="w-16 shrink-0 text-right text-sm">
+                                <span className="font-semibold text-text">{cToF(s.day.tempMax)}°</span>
+                                <span className="text-text-mute"> / {cToF(s.day.tempMin)}°</span>
+                              </span>
+                            </>
+                          ) : (
+                            <span className="shrink-0 text-xs text-text-mute">check closer</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-5 text-center text-[10px] text-text-mute">
                   Forecast by Open-Meteo · updates through the day
                 </p>
               </>

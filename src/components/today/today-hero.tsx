@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { weatherCode, cToF, type WeatherResponse } from '@/lib/weather';
+import { weatherCode, cToF, type WeatherResponse, type TripStopInput } from '@/lib/weather';
+import { WeatherDetail } from '@/components/today/weather-detail';
 
 /**
  * The signature element of the app. A bold, filled-primary hero with soft
@@ -85,6 +86,8 @@ export function PresenceHero({
   lat,
   lng,
   dateISO,
+  weatherLabel,
+  tripStops,
 }: {
   city: string;
   flagEmoji: string;
@@ -92,8 +95,11 @@ export function PresenceHero({
   lat?: number | null;
   lng?: number | null;
   dateISO: string;
+  weatherLabel?: string;
+  tripStops?: TripStopInput[];
 }) {
   const [tiles, setTiles] = useState<Tile[] | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     if (typeof lat !== 'number' || typeof lng !== 'number') {
@@ -145,14 +151,34 @@ export function PresenceHero({
       <p className="mt-0.5 text-[13px] opacity-80">{subtitle}</p>
 
       {tiles && tiles.length > 0 && (
-        <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="mt-4 flex w-full items-stretch gap-2 text-left"
+        >
           {tiles.map((t) => (
-            <span key={t.label} className="flex-1 rounded-[11px] bg-white/[0.14] px-3 py-2.5">
+            <span key={t.label} className="flex-1 rounded-[11px] bg-white/[0.14] px-3 py-2.5 transition-colors hover:bg-white/20">
               <span className="block text-[11px] opacity-75">{t.label}</span>
               <span className="mt-0.5 block font-mono text-[15px] font-semibold">{t.value}</span>
             </span>
           ))}
-        </div>
+          <span className="flex w-9 shrink-0 items-center justify-center rounded-[11px] bg-white/[0.14] transition-colors hover:bg-white/20">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+      )}
+
+      {typeof lat === 'number' && typeof lng === 'number' && (
+        <WeatherDetail
+          open={detailOpen}
+          onClose={() => setDetailOpen(false)}
+          lat={lat}
+          lng={lng}
+          label={weatherLabel ?? city}
+          tripStops={tripStops}
+        />
       )}
     </section>
   );

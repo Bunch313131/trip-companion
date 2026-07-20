@@ -93,6 +93,13 @@ export type WeatherDetailResponse = {
   outOfRange?: boolean;
 };
 
+/** One stop's forecast for the day you'll be there — the trip outlook. */
+export type TripStopForecast = { id: string; city: string; date: string; day: WeatherDay | null };
+export type TripWeatherResponse = { stops: TripStopForecast[] };
+
+/** A stop to request in the trip outlook. */
+export type TripStopInput = { id: string; city: string; lat: number; lng: number; date: string };
+
 export function cToF(c: number): number {
   return Math.round((c * 9) / 5 + 32);
 }

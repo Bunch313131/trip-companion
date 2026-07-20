@@ -99,9 +99,18 @@ export default function TodayPage() {
   const geocoded = stops.filter(
     (s) => s.status !== 'cancelled' && typeof s.lat === 'number' && typeof s.lng === 'number'
   );
-  const upcomingStop = geocoded
+  const upcomingStops = geocoded
     .filter((s) => s.departOn >= todayISO)
-    .sort((a, b) => a.arriveOn.localeCompare(b.arriveOn))[0];
+    .sort((a, b) => a.arriveOn.localeCompare(b.arriveOn));
+  const upcomingStop = upcomingStops[0];
+  // Forecast each upcoming stop on the first day you'll be there (from today).
+  const tripOutlookStops = upcomingStops.map((s) => ({
+    id: s.id,
+    city: s.city,
+    lat: s.lat,
+    lng: s.lng,
+    date: s.arriveOn < todayISO ? todayISO : s.arriveOn,
+  }));
   const weatherStop =
     currentStop && typeof currentStop.lat === 'number' ? currentStop : upcomingStop;
   const weatherDate =
@@ -213,6 +222,7 @@ export default function TodayPage() {
                 lng={weatherStop.lng}
                 dateISO={weatherDate}
                 label={weatherStop.city}
+                tripStops={tripOutlookStops}
               />
             )}
 
@@ -269,6 +279,8 @@ export default function TodayPage() {
               lat={weatherStop?.lat}
               lng={weatherStop?.lng}
               dateISO={todayISO}
+              weatherLabel={currentStop?.city ?? weatherStop?.city}
+              tripStops={tripOutlookStops}
             />
 
             {tripId && <MorningBriefing tripId={tripId} dateISO={todayISO} />}

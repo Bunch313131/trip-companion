@@ -1,5 +1,5 @@
 import { requireTripAccess, adminDb } from '@/lib/firebase-admin';
-import { weatherCode, cToF } from '@/lib/weather';
+import { weatherCode, cToF, fmtHour } from '@/lib/weather';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -120,6 +120,7 @@ export async function POST(request: Request) {
         latitude: String(lat),
         longitude: String(lng),
         daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+        hourly: 'precipitation_probability',
         timezone: 'auto',
         start_date: targetISO,
         end_date: targetISO,
@@ -128,7 +129,8 @@ export async function POST(request: Request) {
         next: { revalidate: 1800 },
       });
       if (wr.ok) {
-        const wd = (await wr.json()).daily;
+        const json = await wr.json();
+        const wd = json.daily;
         if (wd?.time?.length) {
           const wx = weatherCode(wd.weather_code[0]);
           const hi = cToF(wd.temperature_2m_max[0]);
@@ -137,6 +139,26 @@ export async function POST(request: Request) {
           weatherLine = `Weather: ${wx.label}, ${hi}°/${lo}°F${
             pop != null && pop >= 20 ? `, ${pop}% chance of rain` : ''
           }.`;
+
+          // Hourly rain timing, so the AI can advise ordering the day.
+          const hp = json.hourly;
+          if (hp?.time?.length) {
+            const dayHours = hp.time
+              .map((t: string, i: number) => ({ t, p: Number(hp.precipitation_probability?.[i] ?? 0) }))
+              .filter((x: { t: string }) => x.t.startsWith(targetISO));
+            const rainy = dayHours.filter((x: { p: number }) => x.p >= 50);
+            const maxP = dayHours.reduce((m: number, x: { p: number }) => Math.max(m, x.p), 0);
+            if (rainy.length) {
+              const first = fmtHour(rainy[0].t);
+              const last = fmtHour(rainy[rainy.length - 1].t);
+              weatherLine +=
+                first === last
+                  ? ` Rain most likely around ${first}.`
+                  : ` Rain most likely ${first}–${last}.`;
+            } else if (maxP < 25) {
+              weatherLine += ' Looks dry through the day.';
+            }
+          }
         }
       }
     } catch {
@@ -165,7 +187,7 @@ ${scheduleText || '- Open day, nothing scheduled'}
 ${weatherLine}
 ${leaveBy ? `They should aim to head out by about ${leaveBy} for the first item.` : ''}
 
-Mention the leave-by time naturally if there is one, note the weather briefly if relevant (umbrella/sunscreen for the kids), and remind them if a ticket is attached for something. Keep it friendly and practical. Plain text only.`;
+Mention the leave-by time naturally if there is one, note the weather briefly if relevant (umbrella/sunscreen for the kids). If a rain window is given, suggest ordering the day around it — do outdoor things (viewpoints, walks, boat/mountain) before the rain and save indoor stops for during it. Remind them if a ticket is attached for something. Keep it friendly and practical. Plain text only.`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${KEY}`;

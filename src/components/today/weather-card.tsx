@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { weatherCode, cToF, type WeatherResponse, type WeatherDay } from '@/lib/weather';
+import { weatherCode, cToF, type WeatherResponse, type WeatherDay, type TripStopInput } from '@/lib/weather';
 import { WeatherDetail } from '@/components/today/weather-detail';
 
 /**
@@ -14,11 +14,13 @@ export function WeatherCard({
   lng,
   dateISO,
   label,
+  tripStops,
 }: {
   lat: number;
   lng: number;
   dateISO: string;
   label?: string;
+  tripStops?: TripStopInput[];
 }) {
   const [state, setState] = useState<{ day: WeatherDay | null; outOfRange: boolean } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -62,7 +64,7 @@ export function WeatherCard({
             week ahead.
           </p>
         </button>
-        <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} />
+        <WeatherDetail open={detailOpen} onClose={() => setDetailOpen(false)} lat={lat} lng={lng} label={label} tripStops={tripStops} />
       </>
     );
   }
