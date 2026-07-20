@@ -5,7 +5,9 @@ import { AppHeader } from '@/components/nav/app-header';
 import { ReservationItem } from '@/components/reservations/reservation-item';
 import { ReservationForm } from '@/components/reservations/reservation-form';
 import { useTrip } from '@/lib/trip-context';
+import { useAuth } from '@/lib/auth-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
+import { patchReservation } from '@/lib/mutations';
 import { flag } from '@/lib/format';
 import type { StopDoc, ReservationDoc, WithId } from '@/types/domain';
 
@@ -15,6 +17,7 @@ function sortByStart(a: WithId<ReservationDoc>, b: WithId<ReservationDoc>) {
 
 export default function ReservationsPage() {
   const { tripId, loading } = useTrip();
+  const { user } = useAuth();
   const { docs: stops } = useTripCollection<StopDoc>(tripId, 'stops', orderBy('orderIdx'));
   const { docs: reservations, loading: resLoading } = useTripCollection<ReservationDoc>(
     tripId,
@@ -71,7 +74,16 @@ export default function ReservationsPage() {
         {toBook.length > 0 && (
           <Group title="Still to book" accent>
             {toBook.map((r) => (
-              <ReservationItem key={r.id} res={r} onEdit={() => openEdit(r)} />
+              <ReservationItem
+                key={r.id}
+                res={r}
+                onEdit={() => openEdit(r)}
+                onMarkBooked={
+                  user && tripId
+                    ? () => patchReservation(tripId, r.id, user.uid, { status: 'booked' })
+                    : undefined
+                }
+              />
             ))}
           </Group>
         )}

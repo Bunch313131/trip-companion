@@ -19,9 +19,11 @@ const ICON: Record<string, string> = {
 export function ReservationItem({
   res,
   onEdit,
+  onMarkBooked,
 }: {
   res: WithId<ReservationDoc>;
   onEdit?: () => void;
+  onMarkBooked?: () => void | Promise<void>;
 }) {
   const when = fmtDateTime(res.startsAt, { time: res.type !== 'hotel' });
   const cost = money(res.costCents, res.costCurrency);
@@ -76,6 +78,27 @@ export function ReservationItem({
           </div>
 
           {res.notes && <p className="mt-1.5 text-xs text-text-mute">{res.notes}</p>}
+
+          {res.status === 'to_book' && onMarkBooked && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await onMarkBooked();
+                  toast.success('Marked as booked');
+                } catch {
+                  toast.error('Could not update');
+                }
+              }}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-confirmed-soft px-2.5 py-1.5 text-xs font-semibold text-confirmed transition-colors hover:bg-confirmed hover:text-white"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Mark as booked
+            </button>
+          )}
         </div>
       </div>
     </div>
