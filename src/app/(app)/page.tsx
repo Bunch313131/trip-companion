@@ -8,12 +8,14 @@ import { NextUp } from '@/components/today/next-up';
 import { WeatherCard } from '@/components/today/weather-card';
 import { MorningBriefing } from '@/components/today/morning-briefing';
 import { LocationBar } from '@/components/today/location-bar';
+import { TodayTickets, type TicketRef } from '@/components/today/today-tickets';
 import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
+import { EventDetail, type EventSelection } from '@/components/schedule/event-detail';
 import { prettyScope } from '@/components/open-items/open-item-row';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { flag } from '@/lib/format';
-import { toISODate, getCurrentStop, tripDayNumber, totalTripDays } from '@/lib/trip-logic';
+import { toISODate, getCurrentStop, tripDayNumber, totalTripDays, fmtTime } from '@/lib/trip-logic';
 import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc } from '@/types/domain';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -44,6 +46,8 @@ export default function TodayPage() {
 
   // ?date=YYYY-MM-DD previews any trip day (great before departure).
   const [dateOverride, setDateOverride] = useState<string | null>(null);
+  // Drill-in detail sheet for a tapped schedule row.
+  const [selection, setSelection] = useState<EventSelection | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get('date');
     if (p) setDateOverride(p);
@@ -110,6 +114,51 @@ export default function TodayPage() {
     currentStop && typeof currentStop.lat === 'number' ? currentStop : upcomingStop;
   const weatherDate =
     phase === 'during' ? todayISO : weatherStop ? weatherStop.arriveOn : todayISO;
+
+  // Drill-in lookups + today's retrievable documents (tickets front-and-center).
+  const resById = new Map(reservations.map((r) => [r.id, r]));
+  const actById = new Map(activities.map((a) => [a.id, a]));
+  function openEvent(e: ScheduleEvent) {
+    if (e.isReservation) {
+      const res = resById.get(e.id);
+      if (res) setSelection({ type: 'reservation', res });
+    } else {
+      const act = actById.get(e.id);
+      if (act) setSelection({ type: 'activity', act });
+    }
+  }
+
+  const todayTickets: TicketRef[] = reservations
+    .filter((r) => r.status !== 'cancelled' && r.documentUrl && todayEvents.some((e) => e.id === r.id))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      time: fmtTime(r.startsAt),
+      documentUrl: r.documentUrl!,
+      note: r.provider ?? null,
+    }));
+  // Include the current stop's lodging doc (needed throughout the stay).
+  if (currentStop) {
+    for (const r of reservations) {
+      if (
+        r.type === 'hotel' &&
+        r.stopId === currentStop.id &&
+        r.status !== 'cancelled' &&
+        r.documentUrl &&
+        !todayTickets.some((t) => t.id === r.id)
+      ) {
+        todayTickets.push({
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          time: null,
+          documentUrl: r.documentUrl,
+          note: 'Where you’re staying',
+        });
+      }
+    }
+  }
 
   // Pre-trip status numbers.
   const activeStops = stops.filter((s) => s.status !== 'cancelled');
@@ -242,13 +291,17 @@ export default function TodayPage() {
 
             {nextEvent && <NextUp event={nextEvent} />}
 
+            <TodayTickets tickets={todayTickets} />
+
             <section className="rounded-card border border-border bg-surface p-4 shadow-card">
               <h2 className="mb-2 font-display text-sm font-semibold text-text">Today&apos;s schedule</h2>
               {todayEvents.length === 0 ? (
                 <p className="py-3 text-sm text-text-mute">Nothing scheduled — an open day.</p>
               ) : (
                 <div>
-                  {todayEvents.map((e) => <ScheduleRow key={e.id} event={e} />)}
+                  {todayEvents.map((e) => (
+                    <ScheduleRow key={e.id} event={e} onClick={() => openEvent(e)} />
+                  ))}
                 </div>
               )}
             </section>
@@ -290,6 +343,8 @@ export default function TodayPage() {
           </span>
         </Link>
       </main>
+
+      <EventDetail selection={selection} onClose={() => setSelection(null)} />
     </>
   );
 }
