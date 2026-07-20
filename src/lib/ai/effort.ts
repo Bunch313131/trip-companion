@@ -10,10 +10,10 @@
 export type Effort = 'quick' | 'deep';
 
 const DEEP_INTENT =
-  /\b(re-?)?(plan|planning|reshuffle|rework|reorgani[sz]e|rearrange|redesign|overhaul)\b|\boptimi[sz]e\b|\bcompare\b|\btrade-?offs?\b|\bprioriti[sz]e\b|\bstrateg|\brecommend|\bsuggest|\badvi[cs]e\b|\bshould (we|i|it)\b|\bis it (worth|better|a good idea)\b|\bwhat if\b|\bhelp (me|us)\b|\bidea/i;
+  /\b(re-?)?(plan|planning|reshuffle|rework|reorgani[sz]e|rearrange|reorder|redesign|overhaul)\b|\boptimi[sz]e\b|\bcompare\b|\btrade-?offs?\b|\bprioriti[sz]e\b|\bstrateg|\brecommend|\bsuggest|\badvi[cs]e\b|\bshould (we|i|it)\b|\bis it (worth|better|a good idea)\b|\bwhat if\b|\bhelp (me|us)\b|\bidea|\bflag\b/i;
 
 const DEEP_PHRASES =
-  /\b(figure out|think (it |this )?through|really think|walk me through|best (way|order|route|plan|option|time)|what should we (cut|drop|skip|prioriti[sz]e|do)|whole (day|trip|itinerary)|the entire|from scratch|weigh the|worried about|concerned|running (behind|late)|too much|what do you think|make (it|this) (better|work))\b/i;
+  /\b(figure out|think (it |this )?through|really think|walk me through|take a look|look at (our|the|my|this)|best (way|order|route|plan|option|time)|what should we (cut|drop|skip|prioriti[sz]e|do)|anything (you|we|i)('?d| would| should| could)|whole (day|trip|itinerary)|the entire|from scratch|weigh the|worried about|concerned|running (behind|late)|too much|what do you think|make (it|this) (better|work))\b/i;
 
 // Short, obvious fact lookups stay on the fast path; everything substantive
 // (advice, planning, reasoning, open-ended) gets the smarter model.
