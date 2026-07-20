@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AppHeader } from '@/components/nav/app-header';
 import { ReservationItem } from '@/components/reservations/reservation-item';
 import { ReservationForm } from '@/components/reservations/reservation-form';
+import { ImportDoc } from '@/components/reservations/import-doc';
 import { useTrip } from '@/lib/trip-context';
 import { useAuth } from '@/lib/auth-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
@@ -26,6 +27,7 @@ export default function ReservationsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<WithId<ReservationDoc> | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   function openAdd() {
     setEditing(null);
@@ -61,13 +63,22 @@ export default function ReservationsPage() {
           <p className="text-xs text-text-dim">
             {active.length} bookings · <span className="text-warning">{toBook.length} to book</span>
           </p>
-          <button
-            type="button"
-            onClick={openAdd}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-ink"
-          >
-            + Add
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="rounded-lg border border-primary/40 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary"
+            >
+              📄 Import
+            </button>
+            <button
+              type="button"
+              onClick={openAdd}
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-ink"
+            >
+              + Add
+            </button>
+          </div>
         </div>
 
         {/* To book — surfaced first */}
@@ -132,13 +143,16 @@ export default function ReservationsPage() {
       </main>
 
       {tripId && (
-        <ReservationForm
-          open={formOpen}
-          onClose={() => setFormOpen(false)}
-          tripId={tripId}
-          stops={stops}
-          existing={editing}
-        />
+        <>
+          <ReservationForm
+            open={formOpen}
+            onClose={() => setFormOpen(false)}
+            tripId={tripId}
+            stops={stops}
+            existing={editing}
+          />
+          <ImportDoc open={importOpen} onClose={() => setImportOpen(false)} tripId={tripId} />
+        </>
       )}
     </>
   );

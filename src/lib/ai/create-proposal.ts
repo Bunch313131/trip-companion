@@ -72,6 +72,32 @@ const TOOL_ENTITY: Record<string, ProposalEntity> = {
   propose_reservation: 'reservations',
 };
 
+/** Create a proposal directly from a set of operations (e.g. document import). */
+export async function createProposalFromOps(
+  tripId: string,
+  input: {
+    proposalType: string;
+    summary: string;
+    rationale: string;
+    operations: ProposalOperation[];
+    diff?: ProposalDiffRow[];
+  }
+): Promise<string> {
+  const ref = await adminDb()
+    .collection(`trips/${tripId}/proposals`)
+    .add({
+      proposalType: input.proposalType,
+      summary: input.summary,
+      rationale: input.rationale,
+      diff: input.diff ?? [],
+      operations: input.operations,
+      status: 'pending',
+      createdBy: 'assistant',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  return ref.id;
+}
+
 /**
  * Create a pending proposal from a tool call. Returns the new proposal id.
  */
