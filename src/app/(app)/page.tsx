@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AppHeader } from '@/components/nav/app-header';
-import { Countdown } from '@/components/today/countdown';
+import { CountdownHero, PresenceHero } from '@/components/today/today-hero';
 import { NextUp } from '@/components/today/next-up';
 import { WeatherCard } from '@/components/today/weather-card';
 import { MorningBriefing } from '@/components/today/morning-briefing';
@@ -19,14 +19,6 @@ import { toISODate, getCurrentStop, tripDayNumber, totalTripDays, fmtTime } from
 import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc } from '@/types/domain';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
-
-function fmtRange(startsOn?: string, endsOn?: string) {
-  if (!startsOn || !endsOn) return '';
-  const o: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  const s = new Date(`${startsOn}T00:00:00`).toLocaleDateString('en-US', o);
-  const e = new Date(`${endsOn}T00:00:00`).toLocaleDateString('en-US', { ...o, year: 'numeric' });
-  return `${s} – ${e}`;
-}
 
 function fmtDue(startsAt?: { toDate: () => Date } | null) {
   if (!startsAt) return null;
@@ -170,6 +162,25 @@ export default function TodayPage() {
     .sort((a, b) => (a.startsAt?.seconds ?? Infinity) - (b.startsAt?.seconds ?? Infinity));
   const stopById = new Map(stops.map((s) => [s.id, s.city]));
 
+  // Hero details.
+  const countryCount = new Set(activeStops.map((s) => s.country)).size;
+  const startLabel = new Date(`${trip.startsOn}T00:00:00`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const orderedStops = [...activeStops].sort((a, b) => a.orderIdx - b.orderIdx);
+  const stopIndex = currentStop ? orderedStops.findIndex((s) => s.id === currentStop.id) + 1 : 0;
+  const presenceSubtitle = currentStop
+    ? [
+        `Day ${dayNum} of ${totalDays}`,
+        stopIndex ? `Stop ${stopIndex} of ${orderedStops.length}` : null,
+        currentStop.region,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : `Day ${dayNum} of ${totalDays} · On the road`;
+
   return (
     <>
       <AppHeader section="Today" />
@@ -186,22 +197,15 @@ export default function TodayPage() {
         {/* ───────────── PRE-TRIP ───────────── */}
         {phase === 'pre' && (
           <>
-            <section className="rounded-card border border-border bg-surface p-5 shadow-card">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                    Departure
-                  </p>
-                  <p className="mt-0.5 font-display text-lg font-semibold text-text">
-                    Germany · France · Switzerland
-                  </p>
-                </div>
-                <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-medium text-primary">
-                  {fmtRange(trip.startsOn, trip.endsOn)}
-                </span>
-              </div>
-              <Countdown startsOn={trip.startsOn} />
-            </section>
+            <CountdownHero
+              startsOn={trip.startsOn}
+              originIata={trip.originIata}
+              returnIata={trip.returnIata}
+              startLabel={startLabel}
+              totalDays={totalDays}
+              stopCount={activeStops.length}
+              countryCount={countryCount}
+            />
 
             {weatherStop && (
               <WeatherCard
@@ -258,38 +262,35 @@ export default function TodayPage() {
         {/* ───────────── DURING TRIP ───────────── */}
         {phase === 'during' && (
           <>
-            <section className="rounded-card border border-border bg-surface p-5 shadow-card">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                Day {dayNum} of {totalDays}
-              </p>
-              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-text">
-                {currentStop ? (
-                  <>
-                    {currentStop.city} <span className="text-lg">{flag(currentStop.country)}</span>
-                  </>
-                ) : (
-                  'Travel day'
-                )}
-              </p>
-              {currentStop?.region && (
-                <p className="text-sm text-text-dim">{currentStop.region}</p>
-              )}
-            </section>
-
-            {weatherStop && (
-              <WeatherCard
-                lat={weatherStop.lat}
-                lng={weatherStop.lng}
-                dateISO={weatherDate}
-                label={currentStop ? undefined : weatherStop.city}
-              />
-            )}
+            <PresenceHero
+              city={currentStop ? currentStop.city : 'Travel day'}
+              flagEmoji={currentStop ? flag(currentStop.country) : ''}
+              subtitle={presenceSubtitle}
+              lat={weatherStop?.lat}
+              lng={weatherStop?.lng}
+              dateISO={todayISO}
+            />
 
             {tripId && <MorningBriefing tripId={tripId} dateISO={todayISO} />}
 
             <LocationBar stops={stops} nextNavQuery={nextEvent?.navQuery} />
 
             {nextEvent && <NextUp event={nextEvent} />}
+
+            {todayEvents.length >= 3 && (
+              <section className="flex items-center gap-3 rounded-[16px] border border-accent bg-accent-soft p-3.5">
+                <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] bg-accent text-base text-white">
+                  ☺
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-semibold text-text">Kid pacing today</p>
+                  <p className="text-xs text-text-dim">
+                    A full day — {todayEvents.length} things on. Pack snacks and plan a mid-afternoon
+                    reset for the twins.
+                  </p>
+                </div>
+              </section>
+            )}
 
             <TodayTickets tickets={todayTickets} />
 
@@ -349,31 +350,70 @@ export default function TodayPage() {
   );
 }
 
-function NeedsAttention({ openTop }: { openTop: { id: string; description: string; priority: string; scope: string }[] }) {
+const KIND_ICON: Record<string, string> = {
+  verify: 'M13 3L4 14h7l-1 7 9-11h-7z',
+  resolve: 'M9.5 9a2.5 2.5 0 113.5 2.3c-.9.4-1.5 1-1.5 2M12 17h.01',
+  confirm: 'M20 6L9 17l-5-5',
+  decide: 'M12 4v6l3 4M8 20l4-4 4 4',
+};
+const KIND_TONE: Record<string, string> = {
+  verify: 'bg-warning-soft text-warning',
+  resolve: 'bg-primary-soft text-primary',
+  confirm: 'bg-confirmed-soft text-confirmed',
+  decide: 'bg-surface-2 text-text-dim',
+};
+
+function NeedsAttention({
+  openTop,
+}: {
+  openTop: { id: string; description: string; priority: string; scope: string; kind: string }[];
+}) {
   if (openTop.length === 0) return null;
   return (
-    <section className="rounded-card border border-border bg-surface p-4 shadow-card">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-sm font-semibold text-text">Needs attention</h2>
-        <Link href="/open-items" className="text-xs font-medium text-primary">
-          {openTop.length > 3 ? `View all ${openTop.length} →` : 'View all →'}
+    <section>
+      <div className="mb-2.5 flex items-center justify-between px-0.5">
+        <h2 className="font-display text-[15px] font-semibold text-text">Needs your attention</h2>
+        <Link href="/open-items" className="text-xs font-semibold text-primary">
+          See all {openTop.length}
         </Link>
       </div>
-      <ul className="space-y-2.5">
-        {openTop.slice(0, 3).map((item) => (
-          <li key={item.id} className="flex items-start gap-2">
-            <span
-              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.priority === 'high' ? 'bg-warning' : 'bg-tentative'}`}
-            />
-            <div className="min-w-0">
-              <p className="text-sm leading-snug text-text">{item.description}</p>
-              {prettyScope(item.scope) && (
-                <p className="text-[11px] text-text-mute">{prettyScope(item.scope)}</p>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-2.5">
+        {openTop.slice(0, 4).map((item) => {
+          const high = item.priority === 'high';
+          return (
+            <Link
+              key={item.id}
+              href="/open-items"
+              className={`flex items-start gap-3 rounded-[14px] border border-border bg-surface p-3.5 shadow-card transition-colors hover:border-primary/40 ${
+                high ? 'border-l-[3px] border-l-primary' : ''
+              }`}
+            >
+              <span
+                className={`mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-[7px] ${KIND_TONE[item.kind] ?? 'bg-surface-2 text-text-dim'}`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
+                  <path d={KIND_ICON[item.kind] ?? KIND_ICON.decide} />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-medium leading-snug text-text">{item.description}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-text-mute">
+                  <span className="font-mono uppercase tracking-wide">{item.kind}</span>
+                  {prettyScope(item.scope) && (
+                    <>
+                      <span>·</span>
+                      <span>{prettyScope(item.scope)}</span>
+                    </>
+                  )}
+                  <span className={high ? 'font-semibold text-primary' : ''}>
+                    · {high ? 'High' : item.priority === 'medium' ? 'Medium' : 'Low'}
+                  </span>
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </section>
   );
 }
