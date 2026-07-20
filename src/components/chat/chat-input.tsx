@@ -33,10 +33,8 @@ export function ChatInput({
   }
 
   return (
-    <div
-      className="border-t border-border bg-bg/95 px-4 pt-2 pb-3 backdrop-blur-sm"
-      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-    >
+    <div className="border-t border-border bg-bg/95 px-4 pb-3 pt-2 backdrop-blur-sm">
+
       <div className="mx-auto max-w-lg">
         {/* Suggestion chips */}
         <div className="mb-2 flex gap-2 overflow-x-auto pb-1">

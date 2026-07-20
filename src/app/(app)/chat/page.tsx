@@ -99,7 +99,7 @@ export default function ChatPage() {
   return (
     <>
       <AppHeader section="Chat" />
-      <div className="-mb-24 flex h-[calc(100dvh-8.5rem)] flex-col">
+      <div className="-mb-24 flex h-[calc(100dvh-7rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col">
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           <div className="mx-auto w-full max-w-lg space-y-4">
             {empty ? (
