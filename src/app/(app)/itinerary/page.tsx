@@ -58,7 +58,7 @@ export default function ItineraryPage() {
             </p>
           </div>
         ) : (
-          <div className="relative space-y-3">
+          <div className="relative">
             {visibleStops.map((stop, i) => (
               <StopCard
                 key={stop.id}
@@ -67,6 +67,7 @@ export default function ItineraryPage() {
                 tripId={tripId!}
                 activities={activities.filter((a) => a.stopId === stop.id)}
                 reservations={reservations.filter((r) => r.stopId === stop.id)}
+                isLast={i === visibleStops.length - 1}
               />
             ))}
           </div>
