@@ -170,6 +170,52 @@ export function WeatherDetail({
                   </p>
                 )}
 
+                {/* Weather at each stop — forward-looking across the trip */}
+                {tripStops && tripStops.length > 0 && (
+                  <div className="mt-5 rounded-2xl border border-border bg-surface p-3.5">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-mute">
+                      Weather at each stop
+                    </h3>
+                    <p className="mb-2 text-[11px] text-text-mute">The day you&apos;ll be there</p>
+                    {!trip ? (
+                      <div className="space-y-2 py-1">
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} className="h-4 animate-pulse rounded bg-surface-2" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {trip.map((s) => (
+                          <div key={s.id} className="flex items-center gap-3 py-2">
+                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+                              {s.city}
+                            </span>
+                            <span className="shrink-0 text-xs text-text-mute">{shortDate(s.date)}</span>
+                            {s.day ? (
+                              <>
+                                <span className="w-6 shrink-0 text-center text-base">
+                                  {weatherCode(s.day.code).emoji}
+                                </span>
+                                <span className="w-9 shrink-0 text-right text-[11px] text-primary">
+                                  {s.day.precipProb != null && s.day.precipProb >= 10
+                                    ? `${s.day.precipProb}%`
+                                    : ''}
+                                </span>
+                                <span className="w-16 shrink-0 text-right text-sm">
+                                  <span className="font-semibold text-text">{cToF(s.day.tempMax)}°</span>
+                                  <span className="text-text-mute"> / {cToF(s.day.tempMin)}°</span>
+                                </span>
+                              </>
+                            ) : (
+                              <span className="shrink-0 text-xs text-text-mute">check closer</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Hourly */}
                 {upcomingHours.length > 0 && (
                   <div className="mt-5">
@@ -231,43 +277,6 @@ export function WeatherDetail({
                     })}
                   </div>
                 </div>
-
-                {/* Across your trip */}
-                {trip && trip.some((s) => s.day) && (
-                  <div className="mt-5">
-                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-mute">
-                      Across your trip
-                    </h3>
-                    <div className="space-y-1">
-                      {trip.map((s) => (
-                        <div key={s.id} className="flex items-center gap-3 py-1">
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
-                            {s.city}
-                          </span>
-                          <span className="shrink-0 text-xs text-text-mute">{shortDate(s.date)}</span>
-                          {s.day ? (
-                            <>
-                              <span className="w-6 shrink-0 text-center text-base">
-                                {weatherCode(s.day.code).emoji}
-                              </span>
-                              <span className="w-9 shrink-0 text-right text-[11px] text-primary">
-                                {s.day.precipProb != null && s.day.precipProb >= 10
-                                  ? `${s.day.precipProb}%`
-                                  : ''}
-                              </span>
-                              <span className="w-16 shrink-0 text-right text-sm">
-                                <span className="font-semibold text-text">{cToF(s.day.tempMax)}°</span>
-                                <span className="text-text-mute"> / {cToF(s.day.tempMin)}°</span>
-                              </span>
-                            </>
-                          ) : (
-                            <span className="shrink-0 text-xs text-text-mute">check closer</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <p className="mt-5 text-center text-[10px] text-text-mute">
                   Forecast by Open-Meteo · updates through the day
