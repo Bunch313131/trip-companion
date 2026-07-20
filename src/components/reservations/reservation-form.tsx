@@ -172,10 +172,10 @@ export function ReservationForm({
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
+    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()} repositionInputs={false}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92vh] max-w-lg flex-col rounded-t-2xl border border-border bg-bg outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-lg flex-col rounded-t-2xl border border-border bg-bg outline-none">
           <div className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-border" />
           <div className="overflow-y-auto px-5 pb-8 pt-3">
             <Drawer.Title className="font-display text-lg font-semibold text-text">

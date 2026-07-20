@@ -55,6 +55,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  // Resize the layout viewport when the on-screen keyboard opens, so bottom-
+  // anchored sheets (Vaul drawers) sit above the keyboard and their inputs
+  // stay reachable instead of hiding behind it.
+  interactiveWidget: 'resizes-content',
 };
 
 /**
