@@ -1,30 +1,26 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AppHeader } from '@/components/nav/app-header';
 import { Countdown } from '@/components/today/countdown';
+import { NextUp } from '@/components/today/next-up';
+import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
+import { prettyScope } from '@/components/open-items/open-item-row';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
-import { prettyScope } from '@/components/open-items/open-item-row';
-import type { StopDoc, ReservationDoc, OpenItemDoc } from '@/types/domain';
+import { flag } from '@/lib/format';
+import { toISODate, getCurrentStop, tripDayNumber, totalTripDays } from '@/lib/trip-logic';
+import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc } from '@/types/domain';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
-/**
- * Today / Dashboard — pre-trip variant, live from Firestore.
- * Counts and the "next to book" list are derived from the seeded trip via
- * onSnapshot, so edits by either user show up in real time.
- */
-
 function fmtRange(startsOn?: string, endsOn?: string) {
   if (!startsOn || !endsOn) return '';
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  const start = new Date(`${startsOn}T00:00:00`).toLocaleDateString('en-US', opts);
-  const end = new Date(`${endsOn}T00:00:00`).toLocaleDateString('en-US', {
-    ...opts,
-    year: 'numeric',
-  });
-  return `${start} – ${end}`;
+  const o: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  const s = new Date(`${startsOn}T00:00:00`).toLocaleDateString('en-US', o);
+  const e = new Date(`${endsOn}T00:00:00`).toLocaleDateString('en-US', { ...o, year: 'numeric' });
+  return `${s} – ${e}`;
 }
 
 function fmtDue(startsAt?: { toDate: () => Date } | null) {
@@ -40,7 +36,15 @@ export default function TodayPage() {
   const { trip, tripId, loading, empty } = useTrip();
   const { docs: stops } = useTripCollection<StopDoc>(tripId, 'stops', orderBy('orderIdx'));
   const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
+  const { docs: activities } = useTripCollection<ActivityDoc>(tripId, 'activities');
   const { docs: openItems } = useTripCollection<OpenItemDoc>(tripId, 'openItems');
+
+  // ?date=YYYY-MM-DD previews any trip day (great before departure).
+  const [dateOverride, setDateOverride] = useState<string | null>(null);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('date');
+    if (p) setDateOverride(p);
+  }, []);
 
   if (loading) {
     return (
@@ -48,12 +52,7 @@ export default function TodayPage() {
         <AppHeader section="Today" />
         <main className="space-y-4 px-5 py-5">
           <div className="h-44 animate-pulse rounded-card bg-surface" />
-          <div className="grid grid-cols-3 gap-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-card bg-surface" />
-            ))}
-          </div>
-          <div className="h-56 animate-pulse rounded-card bg-surface" />
+          <div className="h-40 animate-pulse rounded-card bg-surface" />
         </main>
       </>
     );
@@ -66,14 +65,37 @@ export default function TodayPage() {
         <main className="flex min-h-[70vh] flex-col items-center justify-center px-8 text-center">
           <h1 className="font-display text-xl font-semibold text-text">No trip yet</h1>
           <p className="mt-2 max-w-xs text-sm text-text-dim">
-            Your account isn&apos;t linked to a trip. Once you&apos;re added as a
-            member, it&apos;ll show up here.
+            Once you&apos;re added as a member, your trip shows up here.
           </p>
         </main>
       </>
     );
   }
 
+  const todayISO = dateOverride || toISODate(new Date());
+  const phase = todayISO < trip.startsOn ? 'pre' : todayISO > trip.endsOn ? 'post' : 'during';
+
+  const openTop = openItems
+    .filter((i) => i.status !== 'resolved')
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
+
+  const allEvents: ScheduleEvent[] = [
+    ...reservations.filter((r) => r.status !== 'cancelled').map(reservationToEvent),
+    ...activities.filter((a) => a.status !== 'cancelled').map(activityToEvent),
+  ];
+  const todayEvents = allEvents
+    .filter((e) => e.dateISO === todayISO)
+    .sort((a, b) => a.seconds - b.seconds);
+  const nowMs = dateOverride ? new Date(`${todayISO}T00:00:00`).getTime() : Date.now();
+  const nextEvent = allEvents
+    .filter((e) => Number.isFinite(e.seconds) && e.seconds * 1000 >= nowMs)
+    .sort((a, b) => a.seconds - b.seconds)[0];
+
+  const currentStop = getCurrentStop(stops, todayISO);
+  const dayNum = tripDayNumber(trip.startsOn, todayISO);
+  const totalDays = totalTripDays(trip.startsOn, trip.endsOn);
+
+  // Pre-trip status numbers.
   const activeStops = stops.filter((s) => s.status !== 'cancelled');
   const confirmedStops = activeStops.filter((s) => s.status === 'confirmed');
   const activeRes = reservations.filter((r) => r.status !== 'cancelled');
@@ -81,127 +103,146 @@ export default function TodayPage() {
   const toBook = activeRes
     .filter((r) => r.status === 'to_book')
     .sort((a, b) => (a.startsAt?.seconds ?? Infinity) - (b.startsAt?.seconds ?? Infinity));
-
   const stopById = new Map(stops.map((s) => [s.id, s.city]));
-
-  const openTop = openItems
-    .filter((i) => i.status !== 'resolved')
-    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
 
   return (
     <>
       <AppHeader section="Today" />
-
       <main className="space-y-4 px-5 py-5">
-        {/* Countdown hero */}
-        <section className="rounded-card border border-border bg-surface p-5 shadow-card">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
+        {dateOverride && (
+          <Link
+            href="/"
+            className="block rounded-lg border border-primary/30 bg-primary-soft px-3 py-1.5 text-center text-[11px] font-medium text-primary"
+          >
+            Previewing {todayISO} · tap to exit preview
+          </Link>
+        )}
+
+        {/* ───────────── PRE-TRIP ───────────── */}
+        {phase === 'pre' && (
+          <>
+            <section className="rounded-card border border-border bg-surface p-5 shadow-card">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                    Departure
+                  </p>
+                  <p className="mt-0.5 font-display text-lg font-semibold text-text">
+                    Germany · France · Switzerland
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-medium text-primary">
+                  {fmtRange(trip.startsOn, trip.endsOn)}
+                </span>
+              </div>
+              <Countdown startsOn={trip.startsOn} />
+            </section>
+
+            <section className="grid grid-cols-3 gap-3">
+              <StatTile value={`${confirmedStops.length}`} label="Stops confirmed" tone="confirmed" />
+              <StatTile value={`${booked.length}/${activeRes.length}`} label="Bookings" tone="primary" />
+              <StatTile value={`${toBook.length}`} label="Still to book" tone="warning" />
+            </section>
+
+            <NeedsAttention openTop={openTop} />
+
+            <section className="rounded-card border border-border bg-surface p-4 shadow-card">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-display text-sm font-semibold text-text">Next to book</h2>
+                <Link href="/reservations" className="text-xs font-medium text-primary">
+                  All bookings →
+                </Link>
+              </div>
+              {toBook.length === 0 ? (
+                <p className="py-3 text-sm text-text-mute">Everything&apos;s booked. Nice.</p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {toBook.slice(0, 4).map((item) => {
+                    const due = fmtDue(item.startsAt);
+                    return (
+                      <li key={item.id} className="flex items-center justify-between py-2.5">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-text">{item.name}</p>
+                          <p className="text-xs text-text-mute">
+                            {(item.stopId && stopById.get(item.stopId)) || 'Trip-wide'}
+                          </p>
+                        </div>
+                        {due && (
+                          <span className="ml-3 shrink-0 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning">
+                            {due}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
+
+        {/* ───────────── DURING TRIP ───────────── */}
+        {phase === 'during' && (
+          <>
+            <section className="rounded-card border border-border bg-surface p-5 shadow-card">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                Departure
+                Day {dayNum} of {totalDays}
               </p>
-              <p className="mt-0.5 font-display text-lg font-semibold text-text">
-                Germany · France · Switzerland
+              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-text">
+                {currentStop ? (
+                  <>
+                    {currentStop.city} <span className="text-lg">{flag(currentStop.country)}</span>
+                  </>
+                ) : (
+                  'Travel day'
+                )}
               </p>
-            </div>
-            <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-medium text-primary">
-              {fmtRange(trip.startsOn, trip.endsOn)}
-            </span>
-          </div>
-          <Countdown startsOn={trip.startsOn} />
-        </section>
+              {currentStop?.region && (
+                <p className="text-sm text-text-dim">{currentStop.region}</p>
+              )}
+            </section>
 
-        {/* Trip status strip */}
-        <section className="grid grid-cols-3 gap-3">
-          <StatTile
-            value={`${confirmedStops.length}`}
-            label="Stops confirmed"
-            tone="confirmed"
-          />
-          <StatTile
-            value={`${booked.length}/${activeRes.length}`}
-            label="Bookings"
-            tone="primary"
-          />
-          <StatTile value={`${toBook.length}`} label="Still to book" tone="warning" />
-        </section>
+            {nextEvent && <NextUp event={nextEvent} />}
 
-        {/* Needs attention (open items) */}
-        {openTop.length > 0 && (
-          <section className="rounded-card border border-border bg-surface p-4 shadow-card">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-sm font-semibold text-text">Needs attention</h2>
-              <Link href="/open-items" className="text-xs font-medium text-primary">
-                {openTop.length > 3 ? `View all ${openTop.length} →` : 'View all →'}
-              </Link>
-            </div>
-            <ul className="space-y-2.5">
-              {openTop.slice(0, 3).map((item) => (
-                <li key={item.id} className="flex items-start gap-2">
-                  <span
-                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                      item.priority === 'high' ? 'bg-warning' : 'bg-tentative'
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm leading-snug text-text">{item.description}</p>
-                    {prettyScope(item.scope) && (
-                      <p className="text-[11px] text-text-mute">{prettyScope(item.scope)}</p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <section className="rounded-card border border-border bg-surface p-4 shadow-card">
+              <h2 className="mb-2 font-display text-sm font-semibold text-text">Today&apos;s schedule</h2>
+              {todayEvents.length === 0 ? (
+                <p className="py-3 text-sm text-text-mute">Nothing scheduled — an open day.</p>
+              ) : (
+                <div>
+                  {todayEvents.map((e) => <ScheduleRow key={e.id} event={e} />)}
+                </div>
+              )}
+            </section>
+
+            <NeedsAttention openTop={openTop} />
+          </>
+        )}
+
+        {/* ───────────── POST TRIP ───────────── */}
+        {phase === 'post' && (
+          <section className="rounded-card border border-border bg-surface p-6 text-center shadow-card">
+            <p className="font-display text-2xl font-bold text-text">You did it 🎉</p>
+            <p className="mt-1 text-sm text-text-dim">
+              {totalDays} days · {activeStops.length} stops across Germany, France & Switzerland.
+            </p>
+            <p className="mt-3 text-xs text-text-mute">
+              Your trip is preserved here — searchable any time.
+            </p>
           </section>
         )}
 
-        {/* Next to book */}
-        <section className="rounded-card border border-border bg-surface p-4 shadow-card">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-sm font-semibold text-text">Next to book</h2>
-            <Link href="/reservations" className="text-xs font-medium text-primary">
-              All bookings →
-            </Link>
-          </div>
-          {toBook.length === 0 ? (
-            <p className="py-3 text-sm text-text-mute">
-              Everything&apos;s booked. Nice.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {toBook.slice(0, 4).map((item) => {
-                const due = fmtDue(item.startsAt);
-                return (
-                  <li key={item.id} className="flex items-center justify-between py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-text">{item.name}</p>
-                      <p className="text-xs text-text-mute">
-                        {(item.stopId && stopById.get(item.stopId)) || 'Trip-wide'}
-                      </p>
-                    </div>
-                    {due && (
-                      <span className="ml-3 shrink-0 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning">
-                        {due}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        {/* Ask the companion */}
+        {/* Companion CTA (all phases) */}
         <Link
           href="/chat"
           className="flex items-center justify-between rounded-card border border-primary/30 bg-primary-soft p-4 transition-colors hover:border-primary/50"
         >
           <div>
-            <p className="font-display text-sm font-semibold text-text">
-              Ask your trip companion
-            </p>
+            <p className="font-display text-sm font-semibold text-text">Ask your trip companion</p>
             <p className="text-xs text-text-dim">
-              Plan a day, find a restaurant, check the weather.
+              {phase === 'during'
+                ? 'Running behind? Reshuffle today, find dinner nearby.'
+                : 'Plan a day, find a restaurant, check the weather.'}
             </p>
           </div>
           <span className="text-primary">
@@ -215,6 +256,35 @@ export default function TodayPage() {
   );
 }
 
+function NeedsAttention({ openTop }: { openTop: { id: string; description: string; priority: string; scope: string }[] }) {
+  if (openTop.length === 0) return null;
+  return (
+    <section className="rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-sm font-semibold text-text">Needs attention</h2>
+        <Link href="/open-items" className="text-xs font-medium text-primary">
+          {openTop.length > 3 ? `View all ${openTop.length} →` : 'View all →'}
+        </Link>
+      </div>
+      <ul className="space-y-2.5">
+        {openTop.slice(0, 3).map((item) => (
+          <li key={item.id} className="flex items-start gap-2">
+            <span
+              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.priority === 'high' ? 'bg-warning' : 'bg-tentative'}`}
+            />
+            <div className="min-w-0">
+              <p className="text-sm leading-snug text-text">{item.description}</p>
+              {prettyScope(item.scope) && (
+                <p className="text-[11px] text-text-mute">{prettyScope(item.scope)}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function StatTile({
   value,
   label,
@@ -225,11 +295,7 @@ function StatTile({
   tone: 'confirmed' | 'primary' | 'warning';
 }) {
   const color =
-    tone === 'confirmed'
-      ? 'text-confirmed'
-      : tone === 'warning'
-        ? 'text-warning'
-        : 'text-primary';
+    tone === 'confirmed' ? 'text-confirmed' : tone === 'warning' ? 'text-warning' : 'text-primary';
   return (
     <div className="rounded-card border border-border bg-surface p-3 shadow-card">
       <p className={`font-mono text-2xl font-semibold ${color}`}>{value}</p>
