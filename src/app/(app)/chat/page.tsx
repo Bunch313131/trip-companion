@@ -102,14 +102,13 @@ export default function ChatPage() {
     <>
       <AppHeader section="Chat" />
       <div
-        className="-mb-24 flex flex-col"
+        className="fixed inset-x-0 z-20 flex flex-col transition-[bottom] duration-200"
         style={{
-          // When the keyboard is up the nav hides, so reclaim its space; the
-          // input then sits directly above the keyboard. Otherwise clear the
-          // (shrunk) bottom nav plus both safe-area insets.
-          height: keyboardOpen
-            ? 'calc(100dvh - 3.5rem - env(safe-area-inset-top))'
-            : 'calc(100dvh - 6.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+          // Pin between the header and the bottom. `bottom: 0` reliably sits
+          // above the on-screen keyboard (same anchor the nav uses); when the
+          // keyboard is closed we lift it to clear the shrunk bottom nav.
+          top: 'calc(3.4rem + env(safe-area-inset-top))',
+          bottom: keyboardOpen ? '0px' : 'calc(3rem + env(safe-area-inset-bottom))',
         }}
       >
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
