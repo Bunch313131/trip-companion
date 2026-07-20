@@ -184,12 +184,12 @@ export function ActivityForm({
                 </Field>
               </div>
 
-              <Field label="Location">
+              <Field label="Address / location — used for Navigate">
                 <input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className={inputCls}
-                  placeholder="Address or place — used for Navigate"
+                  placeholder="Street + city, or a place Apple Maps knows"
                 />
               </Field>
 

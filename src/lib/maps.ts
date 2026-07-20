@@ -16,7 +16,16 @@ export function appleMapsDirections(dest: NavDest): string | null {
   return null;
 }
 
-/** Reservation types that map to a physical place worth navigating to. */
-export function reservationNavQuery(type: string, name: string): string | null {
+/**
+ * The best thing to hand Apple Maps for a reservation: a real street address
+ * when we have one (geocodes reliably), otherwise the name for place-type
+ * bookings only (a famous POI like a castle resolves; a flight/car does not).
+ */
+export function reservationNavQuery(
+  type: string,
+  name: string,
+  address?: string | null
+): string | null {
+  if (address && address.trim()) return address.trim();
   return ['hotel', 'restaurant', 'ticket', 'activity', 'rail'].includes(type) ? name : null;
 }

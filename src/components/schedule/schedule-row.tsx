@@ -51,7 +51,7 @@ export function reservationToEvent(r: WithId<ReservationDoc>): ScheduleEvent {
     documentUrl: r.documentUrl ?? null,
     isReservation: true,
     dateISO: isoDateOf(r.startsAt, tz),
-    navQuery: reservationNavQuery(r.type, r.name),
+    navQuery: reservationNavQuery(r.type, r.name, r.address),
     kind: r.type,
   };
 }

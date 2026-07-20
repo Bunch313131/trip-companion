@@ -68,7 +68,7 @@ export function EventDetail({
 function ReservationDetail({ res }: { res: WithId<ReservationDoc> }) {
   const when = whenLabel(res.startsAt, res.tz, res.type === 'flight');
   const cost = money(res.costCents, res.costCurrency);
-  const navQuery = reservationNavQuery(res.type, res.name);
+  const navQuery = reservationNavQuery(res.type, res.name, res.address);
 
   return (
     <div>
@@ -86,6 +86,7 @@ function ReservationDetail({ res }: { res: WithId<ReservationDoc> }) {
 
       <dl className="mt-4 space-y-2.5">
         {when && <Row label="When" value={when} />}
+        {res.address && <Row label="Address" value={res.address} />}
         {res.provider && <Row label="Provider" value={res.provider} />}
         {res.confirmation && <Row label="Confirmation" value={res.confirmation} mono />}
         {cost && <Row label="Cost" value={cost} />}

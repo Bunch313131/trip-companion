@@ -15,6 +15,10 @@ const EXTRACT_SCHEMA = {
       enum: ['flight', 'hotel', 'rail', 'car', 'ticket', 'restaurant', 'activity', 'other'],
     },
     name: { type: 'string' },
+    address: {
+      type: 'string',
+      description: 'Full street address of the venue/hotel/pickup, incl. city and country if present',
+    },
     provider: { type: 'string' },
     confirmation: { type: 'string' },
     starts_at: { type: 'string', description: 'ISO 8601 datetime, e.g. 2026-08-05T15:00' },

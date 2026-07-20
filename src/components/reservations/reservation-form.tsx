@@ -56,6 +56,7 @@ export function ReservationForm({
   const [startsAt, setStartsAt] = useState(tsToLocalInput(existing?.startsAt));
   const [confirmation, setConfirmation] = useState(existing?.confirmation ?? '');
   const [provider, setProvider] = useState(existing?.provider ?? '');
+  const [address, setAddress] = useState(existing?.address ?? '');
   const [cost, setCost] = useState(existing?.costCents != null ? String(existing.costCents / 100) : '');
   const [currency, setCurrency] = useState(existing?.costCurrency ?? 'EUR');
   const [status, setStatus] = useState<ReservationDoc['status']>(existing?.status ?? 'to_book');
@@ -108,6 +109,7 @@ export function ReservationForm({
           setType(ex.type as ReservationDoc['type']);
         }
         if (ex.name && !name.trim()) setName(String(ex.name));
+        if (ex.address && !address.trim()) setAddress(String(ex.address));
         if (ex.provider && !provider.trim()) setProvider(String(ex.provider));
         if (ex.confirmation && !confirmation.trim()) setConfirmation(String(ex.confirmation));
         if (ex.starts_at && !startsAt) setStartsAt(isoToLocalInput(String(ex.starts_at)));
@@ -139,6 +141,7 @@ export function ReservationForm({
         costCents: cost ? Math.round(parseFloat(cost) * 100) : null,
         costCurrency: cost ? currency : null,
         status,
+        address: address.trim() || null,
         notes: notes.trim() || null,
         ...(documentUrl ? { documentUrl, documentMime } : {}),
       };
@@ -251,6 +254,15 @@ export function ReservationForm({
 
               <Field label="Date & time">
                 <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className={inputCls} />
+              </Field>
+
+              <Field label="Address — used for Navigate">
+                <input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className={inputCls}
+                  placeholder="Street, city, country — e.g. Oberstraße 2, 47051 Duisburg"
+                />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
