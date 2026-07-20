@@ -145,6 +145,7 @@ export default function ReservationsPage() {
       {tripId && (
         <>
           <ReservationForm
+            key={editing?.id ?? 'new'}
             open={formOpen}
             onClose={() => setFormOpen(false)}
             tripId={tripId}
