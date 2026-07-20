@@ -34,14 +34,15 @@ export function stopDays(arriveOn: string, departOn: string): string[] {
   return days;
 }
 
-/** ISO date of a Firestore Timestamp, as seen in the trip's timezone — so an
- *  event buckets to the calendar day the traveler actually experiences it. */
-export function isoDateOf(ts: Timestampish): string | null {
+/** ISO date of a Firestore Timestamp, as seen in the event's own timezone (a
+ *  flight buckets to its departure-local day; everything else to CET) — so it
+ *  lands on the calendar day the traveler actually experiences it. */
+export function isoDateOf(ts: Timestampish, tz: string = TRIP_TZ): string | null {
   if (!ts?.toDate) return null;
   try {
     // en-CA formats as YYYY-MM-DD.
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: TRIP_TZ,
+      timeZone: tz,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -51,14 +52,29 @@ export function isoDateOf(ts: Timestampish): string | null {
   }
 }
 
-export function fmtTime(ts: Timestampish): string | null {
+export function fmtTime(ts: Timestampish, tz: string = TRIP_TZ): string | null {
   if (!ts?.toDate) return null;
   try {
     return ts.toDate().toLocaleTimeString('en-US', {
-      timeZone: TRIP_TZ,
+      timeZone: tz,
       hour: 'numeric',
       minute: '2-digit',
     });
+  } catch {
+    return null;
+  }
+}
+
+/** Short zone label for a timestamp in a given zone (e.g. "PDT", "CEST") — used
+ *  to disambiguate flight times that aren't in the trip's home timezone. */
+export function tzAbbrev(ts: Timestampish, tz: string = TRIP_TZ): string | null {
+  if (!ts?.toDate) return null;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'short',
+    }).formatToParts(ts.toDate());
+    return parts.find((p) => p.type === 'timeZoneName')?.value ?? null;
   } catch {
     return null;
   }

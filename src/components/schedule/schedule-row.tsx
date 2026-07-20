@@ -40,16 +40,17 @@ const STATUS_DOT: Record<string, string> = {
 };
 
 export function reservationToEvent(r: WithId<ReservationDoc>): ScheduleEvent {
+  const tz = r.tz ?? undefined;
   return {
     id: r.id,
     seconds: r.startsAt?.seconds ?? Infinity,
-    time: fmtTime(r.startsAt),
+    time: fmtTime(r.startsAt, tz),
     title: r.name,
     subtitle: r.provider ?? null,
     status: r.status,
     documentUrl: r.documentUrl ?? null,
     isReservation: true,
-    dateISO: isoDateOf(r.startsAt),
+    dateISO: isoDateOf(r.startsAt, tz),
     navQuery: reservationNavQuery(r.type, r.name),
     kind: r.type,
   };

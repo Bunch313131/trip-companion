@@ -5,7 +5,7 @@ import { Timestamp } from 'firebase/firestore';
 import { StatusPill } from '@/components/ui/status-pill';
 import { NavigateButton } from '@/components/ui/navigate-button';
 import { reservationNavQuery } from '@/lib/maps';
-import { fmtTime, fmtDayLabel, isoDateOf } from '@/lib/trip-logic';
+import { fmtTime, fmtDayLabel, isoDateOf, tzAbbrev } from '@/lib/trip-logic';
 import type { ActivityDoc, ReservationDoc, WithId } from '@/types/domain';
 
 export type EventSelection =
@@ -20,11 +20,18 @@ function money(cents?: number | null, currency?: string | null): string | null {
   }).format(cents / 100);
 }
 
-function whenLabel(ts?: Timestamp | null): string | null {
-  const iso = isoDateOf(ts);
+function whenLabel(ts?: Timestamp | null, tz?: string | null, withZone = false): string | null {
+  const zone = tz ?? undefined;
+  const iso = isoDateOf(ts, zone);
   if (!iso) return null;
-  const time = fmtTime(ts);
-  return time ? `${fmtDayLabel(iso)} · ${time}` : fmtDayLabel(iso);
+  const time = fmtTime(ts, zone);
+  if (!time) return fmtDayLabel(iso);
+  let abbr: string | null = null;
+  if (withZone) {
+    const a = tzAbbrev(ts, zone);
+    if (a && a !== tzAbbrev(ts)) abbr = a;
+  }
+  return `${fmtDayLabel(iso)} · ${time}${abbr ? ` ${abbr}` : ''}`;
 }
 
 export function EventDetail({
@@ -59,7 +66,7 @@ export function EventDetail({
 }
 
 function ReservationDetail({ res }: { res: WithId<ReservationDoc> }) {
-  const when = whenLabel(res.startsAt);
+  const when = whenLabel(res.startsAt, res.tz, res.type === 'flight');
   const cost = money(res.costCents, res.costCurrency);
   const navQuery = reservationNavQuery(res.type, res.name);
 

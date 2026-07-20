@@ -1,6 +1,6 @@
 /** Shared formatting helpers for dates, nights, flags, and money. */
 
-import { TRIP_TZ } from '@/lib/trip-logic';
+import { TRIP_TZ, tzAbbrev } from '@/lib/trip-logic';
 
 /** ISO alpha-2 country code → flag emoji (e.g. "FR" → 🇫🇷). */
 export function flag(countryCode?: string): string {
@@ -35,17 +35,26 @@ export function nights(startISO: string, endISO: string): number {
 /** A Firestore Timestamp-ish value → "Jul 26, 2:30 PM" (date + optional time). */
 export function fmtDateTime(
   ts?: { toDate: () => Date } | null,
-  opts: { time?: boolean } = {}
+  opts: { time?: boolean; tz?: string; withZone?: boolean } = {}
 ): string | null {
   if (!ts) return null;
   try {
     const d = ts.toDate();
-    // Show in the trip's timezone (Central European Time) so bookings read the
-    // same whether viewed from home or on the ground. See TRIP_TZ.
-    const date = d.toLocaleDateString('en-US', { timeZone: TRIP_TZ, month: 'short', day: 'numeric' });
+    // Show in the event's own timezone (defaults to CET) so a time reads the
+    // same whether viewed from home or on the ground. Flights pass their
+    // departure-airport zone + withZone to disambiguate. See TRIP_TZ.
+    const tz = opts.tz || TRIP_TZ;
+    const date = d.toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' });
     if (!opts.time) return date;
-    const time = d.toLocaleTimeString('en-US', { timeZone: TRIP_TZ, hour: 'numeric', minute: '2-digit' });
-    return `${date} · ${time}`;
+    const time = d.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+    // Only label the zone when it actually differs from the trip's home zone,
+    // so US-departing flights read "6:19 AM PDT" but European legs stay clean.
+    let zone = '';
+    if (opts.withZone) {
+      const abbr = tzAbbrev(ts, tz);
+      if (abbr && abbr !== tzAbbrev(ts, TRIP_TZ)) zone = ` ${abbr}`;
+    }
+    return `${date} · ${time}${zone}`;
   } catch {
     return null;
   }

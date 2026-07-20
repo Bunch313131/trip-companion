@@ -25,7 +25,11 @@ export function ReservationItem({
   onEdit?: () => void;
   onMarkBooked?: () => void | Promise<void>;
 }) {
-  const when = fmtDateTime(res.startsAt, { time: res.type !== 'hotel' });
+  const when = fmtDateTime(res.startsAt, {
+    time: res.type !== 'hotel',
+    tz: res.tz ?? undefined,
+    withZone: res.type === 'flight',
+  });
   const cost = money(res.costCents, res.costCurrency);
   const dimmed = res.status === 'cancelled' || res.status === 'completed';
 

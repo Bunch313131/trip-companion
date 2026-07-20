@@ -109,6 +109,9 @@ export type ReservationDoc = {
   documentUrl?: string | null;
   documentMime?: string | null;
   notes?: string | null;
+  /** IANA timezone this booking's time is local to (e.g. a flight's departure
+   *  airport). Defaults to the trip's home zone (CET) when unset. */
+  tz?: string | null;
   lastEditedBy: string;
   updatedAt?: Timestamp;
 };
