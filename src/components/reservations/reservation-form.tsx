@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Timestamp, type DocumentReference } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -64,6 +64,14 @@ export function ReservationForm({
   const [documentMime, setDocumentMime] = useState<string | null>(existing?.documentMime ?? null);
   const [parsing, setParsing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  // Auto-disarm the delete confirmation if the user doesn't follow through.
+  useEffect(() => {
+    if (!confirmDel) return;
+    const id = setTimeout(() => setConfirmDel(false), 3500);
+    return () => clearTimeout(id);
+  }, [confirmDel]);
 
   // Stable ref for a new reservation so the doc + its storage path share an id.
   const newRef = useRef<DocumentReference | null>(null);
@@ -273,11 +281,26 @@ export function ReservationForm({
                 <button type="submit" disabled={busy || parsing} className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-ink disabled:opacity-60">
                   {busy ? 'Saving…' : editing ? 'Save changes' : 'Add booking'}
                 </button>
-                {editing && (
-                  <button type="button" onClick={handleDelete} disabled={busy} className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-text-dim transition-colors hover:text-warning disabled:opacity-60">
-                    Delete
-                  </button>
-                )}
+                {editing &&
+                  (confirmDel ? (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={busy}
+                      className="rounded-lg border border-warning bg-warning-soft px-3 py-2.5 text-sm font-semibold text-warning disabled:opacity-60"
+                    >
+                      {busy ? 'Deleting…' : 'Confirm delete'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDel(true)}
+                      disabled={busy}
+                      className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-text-dim transition-colors hover:text-warning disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  ))}
               </div>
             </form>
           </div>

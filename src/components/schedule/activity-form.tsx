@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -64,6 +64,14 @@ export function ActivityForm({
   const [currency, setCurrency] = useState(existing?.costCurrency ?? 'EUR');
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  // Auto-disarm the delete confirmation if the user doesn't follow through.
+  useEffect(() => {
+    if (!confirmDel) return;
+    const id = setTimeout(() => setConfirmDel(false), 3500);
+    return () => clearTimeout(id);
+  }, [confirmDel]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -219,16 +227,26 @@ export function ActivityForm({
                 >
                   {busy ? 'Saving…' : editing ? 'Save changes' : 'Add activity'}
                 </button>
-                {editing && (
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={busy}
-                    className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-text-dim transition-colors hover:text-warning disabled:opacity-60"
-                  >
-                    Delete
-                  </button>
-                )}
+                {editing &&
+                  (confirmDel ? (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={busy}
+                      className="rounded-lg border border-warning bg-warning-soft px-3 py-2.5 text-sm font-semibold text-warning disabled:opacity-60"
+                    >
+                      {busy ? 'Deleting…' : 'Confirm delete'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDel(true)}
+                      disabled={busy}
+                      className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-text-dim transition-colors hover:text-warning disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  ))}
               </div>
             </form>
           </div>
