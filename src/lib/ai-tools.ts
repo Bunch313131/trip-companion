@@ -139,25 +139,50 @@ export const AI_TOOLS: Anthropic.Tool[] = [
  */
 export function buildSystemPrompt(context: {
   trip: { name: string; starts_on: string; ends_on: string; status: string };
+  travelers?: string | null;
   stops: Array<{ id: string; city: string; arrive_on: string; depart_on: string; status: string; notes?: string | null }>;
   today: string; // ISO date
   current_stop_id?: string;
-  recent_reservations: Array<{ id: string; type: string; name: string; status: string; starts_at?: string | null }>;
+  recent_reservations: Array<{
+    id: string;
+    type: string;
+    name: string;
+    status: string;
+    starts_at?: string | null;
+    confirmation?: string | null;
+    address?: string | null;
+    provider?: string | null;
+    cost?: string | null;
+  }>;
   activities?: Array<{ id: string; title: string; kind: string; status: string; starts_at?: string | null; stop_id?: string | null }>;
+  open_items?: Array<{ kind: string; description: string; priority: string; scope: string }>;
+  weather?: string | null;
 }): string {
   const stopsList = context.stops
-    .map((s) => `- [stop_id: ${s.id}] ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}`)
+    .map((s) => `- [stop_id: ${s.id}] ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}${s.notes ? ` — ${s.notes}` : ''}`)
     .join('\n');
 
-  // Show every booking, ordered by date (undated last), so the model sees all
-  // flight legs, hotels, tickets, etc. — not an arbitrary first-N slice.
+  // Show every booking, ordered by date (undated last), with the specifics the
+  // model needs to actually answer (confirmation, cost, address).
   const resList = [...context.recent_reservations]
     .sort((a, b) => {
       if (!a.starts_at) return 1;
       if (!b.starts_at) return -1;
       return a.starts_at < b.starts_at ? -1 : 1;
     })
-    .map((r) => `- [reservation_id: ${r.id}] ${r.type}: ${r.name} (${r.status})${r.starts_at ? ` on ${r.starts_at.slice(0, 10)}` : ''}`)
+    .map((r) => {
+      const bits = [`- [reservation_id: ${r.id}] ${r.type}: ${r.name} (${r.status})`];
+      if (r.starts_at) bits.push(`on ${r.starts_at.slice(0, 10)}`);
+      if (r.confirmation) bits.push(`conf ${r.confirmation}`);
+      if (r.cost) bits.push(r.cost);
+      if (r.provider) bits.push(r.provider);
+      if (r.address) bits.push(`@ ${r.address}`);
+      return bits.join(' · ');
+    })
+    .join('\n');
+
+  const openList = (context.open_items ?? [])
+    .map((o) => `- [${o.kind}] ${o.description} (${o.priority} priority · ${o.scope})`)
     .join('\n');
 
   // The detailed day-by-day plan, grouped by date so the model can reason about
@@ -190,6 +215,10 @@ export function buildSystemPrompt(context: {
 
 Today's date is ${context.today}.
 
+## Who's traveling
+${context.travelers || 'Not specified.'}
+Tailor every suggestion to them — pacing, energy, meal timing, and what's realistic. Proactively flag when a plan looks too ambitious or poorly timed for the group.
+
 ## Current itinerary
 ${stopsList}
 
@@ -200,6 +229,12 @@ ${resList || '(none yet)'}
 This is the minute-by-minute plan (wake, meals, departures, drives, arrivals, activities). All times are Central European Time. When the user wants to re-time the day, add a step, or reshuffle around weather or delays, edit these via propose_activity using the activity_id.
 ${schedule || '(no detailed schedule yet)'}
 
+## Weather outlook (real Open-Meteo forecast — use these numbers, don't invent them)
+${context.weather || '(forecast not available right now)'}
+
+## Needs attention (open to-dos on this trip)
+${openList || '(nothing open)'}
+
 ## Rules for changing the trip
 
 You NEVER modify the trip directly. When the user wants to change something, you MUST call the appropriate propose_* tool. The change is then shown to the user as a card they approve, modify, or reject. Do not describe changes in prose — call the tool.
@@ -208,9 +243,13 @@ When you propose something, write the summary in a clear editorial voice (short,
 
 To update or remove an existing stop, activity, or reservation, pass its id (the stop_id / reservation_id shown in brackets above) in the tool call. To add an activity or reservation to a stop, pass that stop's stop_id. For a brand-new stop you don't need an id. Put the concrete field values in the tool's "changes" object.
 
+## How to be genuinely useful (not just transactional)
+
+You have the full picture above — who's traveling, the itinerary, every booking, the minute-by-minute plan, the weather, and what's still open. Use it. Reason like a sharp travel-planner friend: anticipate problems (tight connections, a rain window over an outdoor day, a wake-up that's too early for young kids, an over-packed afternoon), weigh trade-offs, and suggest concretely. When you spot something worth changing, propose it. Reference the actual data (a specific flight time, the forecast, an open item) rather than speaking in generalities.
+
 ## Rules for information
 
-You do not have live web access. For time-sensitive specifics — current weather, ticket availability, opening hours, prices — don't invent numbers. Share your best general knowledge, flag what should be verified, and point the user to the official source to confirm.
+You DO have the weather forecast above (real data) and the trip's own records — use them directly. You do NOT have live web access for other time-sensitive specifics (ticket availability, opening hours, live prices). Don't invent those — share your best general knowledge, flag what to verify, and point to the official source.
 
 ## Voice
 

@@ -10,17 +10,29 @@
 export type Effort = 'quick' | 'deep';
 
 const DEEP_INTENT =
-  /\b(re-?)?(plan|planning|reshuffle|rework|reorgani[sz]e|rearrange|redesign|overhaul)\b|\boptimi[sz]e\b|\bcompare\b|\btrade-?offs?\b|\bprioriti[sz]e\b|\bstrateg/i;
+  /\b(re-?)?(plan|planning|reshuffle|rework|reorgani[sz]e|rearrange|redesign|overhaul)\b|\boptimi[sz]e\b|\bcompare\b|\btrade-?offs?\b|\bprioriti[sz]e\b|\bstrateg|\brecommend|\bsuggest|\badvi[cs]e\b|\bshould (we|i|it)\b|\bis it (worth|better|a good idea)\b|\bwhat if\b|\bhelp (me|us)\b|\bidea/i;
 
 const DEEP_PHRASES =
-  /\b(figure out|think (it |this )?through|really think|walk me through|best (way|order|route|plan|option)|what should we (cut|drop|skip|prioriti[sz]e)|whole (day|trip|itinerary)|the entire|from scratch|weigh the)\b/i;
+  /\b(figure out|think (it |this )?through|really think|walk me through|best (way|order|route|plan|option|time)|what should we (cut|drop|skip|prioriti[sz]e|do)|whole (day|trip|itinerary)|the entire|from scratch|weigh the|worried about|concerned|running (behind|late)|too much|what do you think|make (it|this) (better|work))\b/i;
+
+// Short, obvious fact lookups stay on the fast path; everything substantive
+// (advice, planning, reasoning, open-ended) gets the smarter model.
+const QUICK_LOOKUP =
+  /^(what('?s| is| time)|when('?s| is)|where('?s| is)|how much|who('?s| is))\b.{0,60}$/i;
 
 export function classifyEffort(message: string): Effort {
   const m = message.trim();
   if (DEEP_INTENT.test(m) || DEEP_PHRASES.test(m)) return 'deep';
-  // Long, detailed asks tend to be multi-constraint planning.
-  if (m.length > 240) return 'deep';
+  if (m.length <= 90 && QUICK_LOOKUP.test(m)) return 'quick';
+  // Bias toward the smarter model — the companion should reason, not just fetch.
+  if (m.length > 120) return 'deep';
   return 'quick';
+}
+
+/** The Gemini model for each effort level. Flash for fast lookups/chat (already
+ *  far smarter than flash-lite), Pro for real planning + reasoning. */
+export function modelFor(effort: Effort): string {
+  return effort === 'deep' ? 'gemini-pro-latest' : 'gemini-flash-latest';
 }
 
 /** Gemini generationConfig for each effort level. */

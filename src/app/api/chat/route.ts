@@ -3,16 +3,15 @@ import { adminDb, requireTripAccess } from '@/lib/firebase-admin';
 import { AI_TOOLS } from '@/lib/ai-tools';
 import { buildTripSystemPrompt } from '@/lib/ai/system-prompt';
 import { createProposalFromTool } from '@/lib/ai/create-proposal';
-import { classifyEffort, effortConfig } from '@/lib/ai/effort';
+import { classifyEffort, effortConfig, modelFor } from '@/lib/ai/effort';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 // Gemini free tier: function calling works; Google Search grounding needs a
-// paid tier, so it's omitted. flash-lite; thinking depth is chosen per message
-// by the effort router (quick = off ~2s, deep = dynamic ~7s). The full flash
-// model's default "high" thinking took 30–80s per reply — unusable for chat.
-const MODEL = 'gemini-flash-lite-latest';
+// paid tier, so it's omitted. Model + thinking are chosen per message by the
+// effort router: quick = gemini-flash-latest (fast, no thinking), deep =
+// gemini-pro-latest with dynamic thinking (real planning/reasoning).
 
 // propose_* tools become Gemini function declarations; they create proposals.
 const FUNCTION_DECLARATIONS = AI_TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => ({
@@ -73,7 +72,8 @@ export async function POST(request: Request) {
   const systemText = await buildTripSystemPrompt(tripId);
   const effort = classifyEffort(message);
   const generationConfig = effortConfig(effort);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${KEY}`;
+  const model = modelFor(effort);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${KEY}`;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

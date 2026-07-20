@@ -1,9 +1,67 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { buildSystemPrompt } from '@/lib/ai-tools';
+import { weatherCode, cToF } from '@/lib/weather';
 
 function todayISO(): string {
   // Server date; the trip is in Europe but day-granularity is fine here.
   return new Date().toISOString().slice(0, 10);
+}
+
+type StopLite = {
+  id: string;
+  city: string;
+  arrive_on: string;
+  depart_on: string;
+  status: string;
+  notes: string | null;
+  lat?: number;
+  lng?: number;
+};
+
+/**
+ * Compact weather outlook for the current + upcoming stops (one multi-location
+ * Open-Meteo call). Real data the model can plan around. Best-effort.
+ */
+async function weatherSummary(stops: StopLite[], today: string): Promise<string | null> {
+  const geo = stops.filter(
+    (s) =>
+      s.status !== 'cancelled' &&
+      typeof s.lat === 'number' &&
+      typeof s.lng === 'number' &&
+      s.depart_on >= today
+  );
+  if (!geo.length) return null;
+  const params = new URLSearchParams({
+    latitude: geo.map((s) => s.lat).join(','),
+    longitude: geo.map((s) => s.lng).join(','),
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+    timezone: 'auto',
+    forecast_days: '16',
+  });
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
+      next: { revalidate: 1800 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const arr = Array.isArray(data) ? data : [data];
+    const lines = geo.map((s, i) => {
+      const d = arr[i]?.daily;
+      const date = s.arrive_on < today ? today : s.arrive_on;
+      const idx = d?.time?.indexOf(date) ?? -1;
+      if (!d || idx < 0) return `- ${s.city} (${date}): forecast appears closer to the date`;
+      const wx = weatherCode(d.weather_code[idx]);
+      const hi = cToF(d.temperature_2m_max[idx]);
+      const lo = cToF(d.temperature_2m_min[idx]);
+      const pop = d.precipitation_probability_max?.[idx];
+      return `- ${s.city} (${date}): ${wx.label}, ${hi}/${lo}°F${
+        pop != null ? `, ${pop}% chance of rain` : ''
+      }`;
+    });
+    return lines.join('\n');
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -12,17 +70,18 @@ function todayISO(): string {
  */
 export async function buildTripSystemPrompt(tripId: string): Promise<string> {
   const db = adminDb();
-  const [tripSnap, stopsSnap, resSnap, actSnap] = await Promise.all([
+  const [tripSnap, stopsSnap, resSnap, actSnap, openSnap] = await Promise.all([
     db.doc(`trips/${tripId}`).get(),
     db.collection(`trips/${tripId}/stops`).orderBy('orderIdx').get(),
     db.collection(`trips/${tripId}/reservations`).get(),
     db.collection(`trips/${tripId}/activities`).get(),
+    db.collection(`trips/${tripId}/openItems`).get(),
   ]);
 
   const trip = tripSnap.data() ?? {};
   const today = todayISO();
 
-  const stops = stopsSnap.docs
+  const stops: StopLite[] = stopsSnap.docs
     .map((d) => {
       const s = d.data();
       return {
@@ -32,11 +91,20 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
         depart_on: s.departOn as string,
         status: s.status as string,
         notes: (s.notes as string) ?? null,
+        lat: s.lat as number | undefined,
+        lng: s.lng as number | undefined,
       };
     })
     .filter((s) => s.status !== 'cancelled');
 
   const currentStop = stops.find((s) => today >= s.arrive_on && today <= s.depart_on);
+
+  const money = (cents?: number | null, cur?: string | null) =>
+    cents == null
+      ? null
+      : new Intl.NumberFormat('en-US', { style: 'currency', currency: cur || 'EUR' }).format(
+          cents / 100
+        );
 
   const recent_reservations = resSnap.docs
     .map((d) => {
@@ -47,6 +115,10 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
         name: r.name as string,
         status: r.status as string,
         starts_at: r.startsAt?.toDate ? r.startsAt.toDate().toISOString() : null,
+        confirmation: (r.confirmation as string) ?? null,
+        address: (r.address as string) ?? null,
+        provider: (r.provider as string) ?? null,
+        cost: money(r.costCents, r.costCurrency),
       };
     })
     .filter((r) => r.status !== 'cancelled');
@@ -65,6 +137,21 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
     })
     .filter((a) => a.status !== 'cancelled');
 
+  const open_items = openSnap.docs
+    .map((d) => {
+      const o = d.data();
+      return {
+        kind: o.kind as string,
+        description: o.description as string,
+        priority: o.priority as string,
+        scope: o.scope as string,
+        status: o.status as string,
+      };
+    })
+    .filter((o) => o.status !== 'resolved');
+
+  const weather = await weatherSummary(stops, today);
+
   return buildSystemPrompt({
     trip: {
       name: (trip.name as string) ?? 'Trip',
@@ -72,10 +159,13 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
       ends_on: (trip.endsOn as string) ?? '',
       status: (trip.status as string) ?? 'planning',
     },
+    travelers: (trip.travelers as string) ?? null,
     stops,
     today,
     current_stop_id: currentStop?.id,
     recent_reservations,
     activities,
+    open_items,
+    weather,
   });
 }
