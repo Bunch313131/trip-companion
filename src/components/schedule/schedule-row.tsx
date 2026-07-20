@@ -103,14 +103,14 @@ export function ScheduleRow({ event, onClick }: { event: ScheduleEvent; onClick?
 
       {/* Body */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-start gap-1.5">
           <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[event.status] ?? 'bg-text-mute'}`}
+            className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[event.status] ?? 'bg-text-mute'}`}
           />
-          <p className={`truncate text-sm ${event.status === 'idea' ? 'text-text-dim' : 'text-text'}`}>
+          <p className={`min-w-0 flex-1 text-sm leading-snug ${event.status === 'idea' ? 'text-text-dim' : 'text-text'}`}>
             {event.title}
           </p>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 pt-0.5">
             {event.documentUrl && (
               <a
                 href={event.documentUrl}
@@ -129,7 +129,7 @@ export function ScheduleRow({ event, onClick }: { event: ScheduleEvent; onClick?
             {event.navQuery && <NavigateButton dest={{ query: event.navQuery }} variant="icon" />}
           </div>
         </div>
-        {event.subtitle && <p className="truncate pl-3 text-[11px] text-text-mute">{event.subtitle}</p>}
+        {event.subtitle && <p className="pl-3 text-[11px] text-text-mute">{event.subtitle}</p>}
       </div>
     </div>
   );

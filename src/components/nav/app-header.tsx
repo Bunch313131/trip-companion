@@ -17,10 +17,10 @@ export function AppHeader({ section }: { section: string }) {
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 border-b border-border bg-bg/95 backdrop-blur-md">
       <div
-        className="mx-auto flex max-w-lg items-center justify-between px-5 py-3"
-        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        className="mx-auto flex max-w-lg items-center justify-between px-5 pb-3.5 pt-3"
+        style={{ paddingTop: 'max(0.9rem, calc(env(safe-area-inset-top) + 0.55rem))' }}
       >
         <div className="flex flex-col gap-0.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-mute">
