@@ -12,10 +12,11 @@ function todayISO(): string {
  */
 export async function buildTripSystemPrompt(tripId: string): Promise<string> {
   const db = adminDb();
-  const [tripSnap, stopsSnap, resSnap] = await Promise.all([
+  const [tripSnap, stopsSnap, resSnap, actSnap] = await Promise.all([
     db.doc(`trips/${tripId}`).get(),
     db.collection(`trips/${tripId}/stops`).orderBy('orderIdx').get(),
     db.collection(`trips/${tripId}/reservations`).get(),
+    db.collection(`trips/${tripId}/activities`).get(),
   ]);
 
   const trip = tripSnap.data() ?? {};
@@ -50,6 +51,20 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
     })
     .filter((r) => r.status !== 'cancelled');
 
+  const activities = actSnap.docs
+    .map((d) => {
+      const a = d.data();
+      return {
+        id: d.id,
+        title: a.title as string,
+        kind: a.kind as string,
+        status: a.status as string,
+        starts_at: a.startsAt?.toDate ? a.startsAt.toDate().toISOString() : null,
+        stop_id: (a.stopId as string) ?? null,
+      };
+    })
+    .filter((a) => a.status !== 'cancelled');
+
   return buildSystemPrompt({
     trip: {
       name: (trip.name as string) ?? 'Trip',
@@ -61,5 +76,6 @@ export async function buildTripSystemPrompt(tripId: string): Promise<string> {
     today,
     current_stop_id: currentStop?.id,
     recent_reservations,
+    activities,
   });
 }

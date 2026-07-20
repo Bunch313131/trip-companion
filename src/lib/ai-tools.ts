@@ -143,6 +143,7 @@ export function buildSystemPrompt(context: {
   today: string; // ISO date
   current_stop_id?: string;
   recent_reservations: Array<{ id: string; type: string; name: string; status: string; starts_at?: string | null }>;
+  activities?: Array<{ id: string; title: string; kind: string; status: string; starts_at?: string | null; stop_id?: string | null }>;
 }): string {
   const stopsList = context.stops
     .map((s) => `- [stop_id: ${s.id}] ${s.city}: ${s.arrive_on} → ${s.depart_on} (${s.status})${s.id === context.current_stop_id ? '  ← you are here' : ''}`)
@@ -151,6 +152,32 @@ export function buildSystemPrompt(context: {
   const resList = context.recent_reservations
     .slice(0, 10)
     .map((r) => `- [reservation_id: ${r.id}] ${r.type}: ${r.name} (${r.status})${r.starts_at ? ` on ${r.starts_at.slice(0, 10)}` : ''}`)
+    .join('\n');
+
+  // The detailed day-by-day plan, grouped by date so the model can reason about
+  // (and re-time) the flow of each day. Times shown in the trip's zone (CET).
+  const acts = (context.activities ?? [])
+    .filter((a) => a.starts_at)
+    .sort((a, b) => (a.starts_at! < b.starts_at! ? -1 : 1));
+  const byDay = new Map<string, string[]>();
+  for (const a of acts) {
+    const dt = new Date(a.starts_at!);
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dt);
+    const time = dt.toLocaleTimeString('en-US', {
+      timeZone: 'Europe/Berlin',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day)!.push(`  - [activity_id: ${a.id}] ${time} ${a.title} (${a.kind}, ${a.status})`);
+  }
+  const schedule = [...byDay.entries()]
+    .map(([day, lines]) => `${day}:\n${lines.join('\n')}`)
     .join('\n');
 
   return `You are the AI companion for a trip called "${context.trip.name}" (${context.trip.starts_on} to ${context.trip.ends_on}, currently ${context.trip.status}).
@@ -162,6 +189,10 @@ ${stopsList}
 
 ## Recent reservations
 ${resList || '(none yet)'}
+
+## Detailed daily schedule
+This is the minute-by-minute plan (wake, meals, departures, drives, arrivals, activities). All times are Central European Time. When the user wants to re-time the day, add a step, or reshuffle around weather or delays, edit these via propose_activity using the activity_id.
+${schedule || '(no detailed schedule yet)'}
 
 ## Rules for changing the trip
 

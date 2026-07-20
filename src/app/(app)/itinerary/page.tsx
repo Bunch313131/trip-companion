@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AppHeader } from '@/components/nav/app-header';
 import { StopCard } from '@/components/itinerary/stop-card';
 import { useTrip } from '@/lib/trip-context';
@@ -16,6 +17,8 @@ export default function ItineraryPage() {
   );
   const { docs: activities } = useTripCollection<ActivityDoc>(tripId, 'activities');
   const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
+
+  const [fullDetail, setFullDetail] = useState(false);
 
   const visibleStops = stops.filter((s) => s.status !== 'cancelled');
   const confirmedCount = visibleStops.filter((s) => s.status === 'confirmed').length;
@@ -37,16 +40,38 @@ export default function ItineraryPage() {
     <>
       <AppHeader section="Trip" />
       <main className="px-5 py-5">
-        {/* Summary line */}
+        {/* Summary line + detail toggle */}
         {trip && visibleStops.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-text-dim">
-              {visibleStops.length} stops · {dateRange(trip.startsOn, trip.endsOn)} ·{' '}
-              <span className="text-confirmed">{confirmedCount} confirmed</span>
-            </p>
-            <p className="mt-0.5 text-[11px] text-text-mute">
-              Tap any underlined field or the status pill to edit.
-            </p>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs text-text-dim">
+                {visibleStops.length} stops · {dateRange(trip.startsOn, trip.endsOn)} ·{' '}
+                <span className="text-confirmed">{confirmedCount} confirmed</span>
+              </p>
+              <p className="mt-0.5 text-[11px] text-text-mute">
+                Tap any underlined field or the status pill to edit.
+              </p>
+            </div>
+            <div className="flex shrink-0 rounded-lg border border-border bg-surface p-0.5 text-[11px] font-medium">
+              <button
+                type="button"
+                onClick={() => setFullDetail(false)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  !fullDetail ? 'bg-primary text-primary-ink' : 'text-text-dim'
+                }`}
+              >
+                Highlights
+              </button>
+              <button
+                type="button"
+                onClick={() => setFullDetail(true)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  fullDetail ? 'bg-primary text-primary-ink' : 'text-text-dim'
+                }`}
+              >
+                Full detail
+              </button>
+            </div>
           </div>
         )}
 
@@ -68,6 +93,7 @@ export default function ItineraryPage() {
                 activities={activities.filter((a) => a.stopId === stop.id)}
                 reservations={reservations.filter((r) => r.stopId === stop.id)}
                 isLast={i === visibleStops.length - 1}
+                showFullDetail={fullDetail}
               />
             ))}
           </div>

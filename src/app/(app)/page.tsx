@@ -9,13 +9,14 @@ import { WeatherCard } from '@/components/today/weather-card';
 import { MorningBriefing } from '@/components/today/morning-briefing';
 import { LocationBar } from '@/components/today/location-bar';
 import { TodayTickets, type TicketRef } from '@/components/today/today-tickets';
+import { TomorrowPeek } from '@/components/today/tomorrow-peek';
 import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
 import { EventDetail, type EventSelection } from '@/components/schedule/event-detail';
 import { prettyScope } from '@/components/open-items/open-item-row';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { flag } from '@/lib/format';
-import { toISODate, getCurrentStop, tripDayNumber, totalTripDays, fmtTime } from '@/lib/trip-logic';
+import { toISODate, getCurrentStop, tripDayNumber, totalTripDays, fmtTime, fmtDayLabel } from '@/lib/trip-logic';
 import type { StopDoc, ReservationDoc, ActivityDoc, OpenItemDoc } from '@/types/domain';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -84,6 +85,10 @@ export default function TodayPage() {
   ];
   const todayEvents = allEvents
     .filter((e) => e.dateISO === todayISO)
+    .sort((a, b) => a.seconds - b.seconds);
+  const tomorrowISO = toISODate(new Date(new Date(`${todayISO}T00:00:00`).getTime() + 86_400_000));
+  const tomorrowEvents = allEvents
+    .filter((e) => e.dateISO === tomorrowISO)
     .sort((a, b) => a.seconds - b.seconds);
   const nowMs = dateOverride ? new Date(`${todayISO}T00:00:00`).getTime() : Date.now();
   const nextEvent = allEvents
@@ -318,6 +323,12 @@ export default function TodayPage() {
                 </div>
               )}
             </section>
+
+            <TomorrowPeek
+              events={tomorrowEvents}
+              dayLabel={fmtDayLabel(tomorrowISO)}
+              onEventClick={openEvent}
+            />
 
             <NeedsAttention openTop={openTop} />
           </>

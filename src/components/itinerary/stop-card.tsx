@@ -41,6 +41,7 @@ export function StopCard({
   reservations,
   tripId,
   isLast = false,
+  showFullDetail = false,
 }: {
   stop: WithId<StopDoc>;
   index: number;
@@ -48,6 +49,7 @@ export function StopCard({
   reservations: WithId<ReservationDoc>[];
   tripId: string;
   isLast?: boolean;
+  showFullDetail?: boolean;
 }) {
   const { user } = useAuth();
   const uid = user?.uid ?? '';
@@ -78,12 +80,18 @@ export function StopCard({
   // Build the day-by-day schedule. Hotels are surfaced in the lodging line
   // above, so keep them out of the per-day rows to avoid duplication.
   const days = stopDays(stop.arriveOn, stop.departOn);
-  const events: ScheduleEvent[] = [
+  // In "highlights" mode, hide the granular logistics (wake, drives, resets) —
+  // keep bookings and the substantive activities. Full detail shows everything.
+  const LOGISTICS = new Set(['transit', 'rest']);
+  let events: ScheduleEvent[] = [
     ...reservations
       .filter((r) => r.status !== 'cancelled' && r.type !== 'hotel')
       .map(reservationToEvent),
     ...activities.filter((a) => a.status !== 'cancelled').map(activityToEvent),
   ];
+  if (!showFullDetail) {
+    events = events.filter((e) => e.isReservation || !LOGISTICS.has(e.kind ?? ''));
+  }
   const byDay: Record<string, ScheduleEvent[]> = {};
   const unscheduled: ScheduleEvent[] = [];
   for (const e of events) {
