@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { NavigateButton } from '@/components/ui/navigate-button';
 import type { ScheduleEvent } from '@/components/schedule/schedule-row';
 
 function relative(targetMs: number, nowMs: number): string {
@@ -55,6 +56,11 @@ export function NextUp({ event }: { event: ScheduleEvent }) {
           </a>
         )}
       </div>
+      {event.navQuery && (
+        <div className="mt-2.5">
+          <NavigateButton dest={{ query: event.navQuery }} variant="chip" />
+        </div>
+      )}
     </section>
   );
 }

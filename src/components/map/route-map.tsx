@@ -5,6 +5,7 @@ import maplibregl from 'maplibre-gl';
 import { Drawer } from 'vaul';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { StatusPill } from '@/components/ui/status-pill';
+import { NavigateButton } from '@/components/ui/navigate-button';
 import { flag, dateRange, nights } from '@/lib/format';
 import type { StopDoc, WithId } from '@/types/domain';
 
@@ -230,6 +231,12 @@ export function RouteMap({
                     {selected.notes}
                   </p>
                 )}
+                <div className="mt-4">
+                  <NavigateButton
+                    dest={{ lat: selected.lat, lng: selected.lng, query: selected.city }}
+                    variant="chip"
+                  />
+                </div>
               </div>
             )}
           </Drawer.Content>
