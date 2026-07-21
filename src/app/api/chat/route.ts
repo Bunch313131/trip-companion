@@ -10,7 +10,7 @@ export const maxDuration = 60;
 
 // Gemini free tier: function calling works; Google Search grounding needs a
 // paid tier, so it's omitted. Model + thinking are chosen per message by the
-// effort router: quick = gemini-flash-latest (fast, no thinking), deep =
+// effort router: quick = gemini-3.6-flash (low thinking), deep =
 // gemini-pro-latest with dynamic thinking (real planning/reasoning).
 
 // propose_* tools become Gemini function declarations; they create proposals.

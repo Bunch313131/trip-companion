@@ -4,7 +4,7 @@ import { weatherCode, cToF, fmtHour } from '@/lib/weather';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const MODEL = 'gemini-flash-lite-latest';
+const MODEL = 'gemini-3.6-flash';
 
 type AdminTs = { toDate: () => Date; seconds: number } | null | undefined;
 
@@ -209,7 +209,7 @@ Mention the leave-by time naturally if there is one, note the weather briefly if
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.6, thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: { temperature: 0.6, thinkingConfig: { thinkingLevel: 'low' } },
       }),
     });
     if (!resp.ok) throw new Error(`Gemini ${resp.status}`);

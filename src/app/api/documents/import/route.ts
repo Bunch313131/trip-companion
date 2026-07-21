@@ -7,7 +7,7 @@ import type { ProposalOperation, ProposalDiffRow, ProposalEntity } from '@/types
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = 'gemini-flash-latest'; // reasoning over the doc + existing trip
+const MODEL = 'gemini-3.6-flash'; // reasoning over the doc + existing trip
 const MAX_BYTES = 20 * 1024 * 1024;
 
 const OP_SCHEMA = {
@@ -197,7 +197,7 @@ Assign stop_id by matching the item's date to the stop whose date range (arrive_
             },
           ],
           generationConfig: {
-            thinkingConfig: { thinkingBudget: 0 },
+            thinkingConfig: { thinkingLevel: 'low' },
             responseMimeType: 'application/json',
             responseSchema: OP_SCHEMA,
           },

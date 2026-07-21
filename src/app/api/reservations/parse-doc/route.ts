@@ -4,7 +4,7 @@ import { adminStorage, requireTripAccess } from '@/lib/firebase-admin';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = 'gemini-flash-lite-latest';
+const MODEL = 'gemini-3.6-flash';
 const MAX_BYTES = 20 * 1024 * 1024;
 
 const EXTRACT_SCHEMA = {
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
               },
             ],
             generationConfig: {
-              thinkingConfig: { thinkingBudget: 0 },
+              thinkingConfig: { thinkingLevel: 'low' },
               responseMimeType: 'application/json',
               responseSchema: EXTRACT_SCHEMA,
             },

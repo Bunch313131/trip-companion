@@ -29,15 +29,20 @@ export function classifyEffort(message: string): Effort {
   return 'quick';
 }
 
-/** The Gemini model for each effort level. Flash for fast lookups/chat (already
- *  far smarter than flash-lite), Pro for real planning + reasoning. */
+/** The Gemini model for each effort level. Gemini 3.6 Flash (released Jul 2026)
+ *  for fast lookups/chat — pinned explicitly so we're on the newer, leaner model
+ *  rather than waiting for the -latest alias to flip. Pro for real planning +
+ *  reasoning (today's release added nothing to the Pro tier). */
 export function modelFor(effort: Effort): string {
-  return effort === 'deep' ? 'gemini-pro-latest' : 'gemini-flash-latest';
+  return effort === 'deep' ? 'gemini-pro-latest' : 'gemini-3.6-flash';
 }
 
-/** Gemini generationConfig for each effort level. */
+/** Gemini generationConfig for each effort level.
+ *  Deep uses dynamic thinking (budget -1) for real reasoning. Quick uses
+ *  Gemini 3.x's thinkingLevel:'low' — the 3.x models reject thinkingBudget:0
+ *  (you can no longer fully disable thinking), so 'low' is the fast path. */
 export function effortConfig(effort: Effort) {
-  return {
-    thinkingConfig: { thinkingBudget: effort === 'deep' ? -1 : 0 },
-  };
+  return effort === 'deep'
+    ? { thinkingConfig: { thinkingBudget: -1 } }
+    : { thinkingConfig: { thinkingLevel: 'low' } };
 }
