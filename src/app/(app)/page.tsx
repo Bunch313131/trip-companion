@@ -175,9 +175,7 @@ export default function TodayPage() {
 
   // Pre-trip status numbers.
   const activeStops = stops.filter((s) => s.status !== 'cancelled');
-  const confirmedStops = activeStops.filter((s) => s.status === 'confirmed');
   const activeRes = reservations.filter((r) => r.status !== 'cancelled');
-  const booked = activeRes.filter((r) => r.status === 'booked' || r.status === 'completed');
   const toBook = activeRes
     .filter((r) => r.status === 'to_book')
     .sort((a, b) => (a.startsAt?.seconds ?? Infinity) - (b.startsAt?.seconds ?? Infinity));
@@ -237,12 +235,6 @@ export default function TodayPage() {
                 tripStops={tripOutlookStops}
               />
             )}
-
-            <section className="grid grid-cols-3 gap-3">
-              <StatTile value={`${confirmedStops.length}`} label="Stops confirmed" tone="confirmed" />
-              <StatTile value={`${booked.length}/${activeRes.length}`} label="Bookings" tone="primary" />
-              <StatTile value={`${toBook.length}`} label="Still to book" tone="warning" />
-            </section>
 
             <NeedsAttention openTop={openTop} />
 
@@ -471,24 +463,5 @@ function NeedsAttention({
         })}
       </div>
     </section>
-  );
-}
-
-function StatTile({
-  value,
-  label,
-  tone,
-}: {
-  value: string;
-  label: string;
-  tone: 'confirmed' | 'primary' | 'warning';
-}) {
-  const color =
-    tone === 'confirmed' ? 'text-confirmed' : tone === 'warning' ? 'text-warning' : 'text-primary';
-  return (
-    <div className="rounded-card border border-border bg-surface p-3 shadow-card">
-      <p className={`font-mono text-2xl font-semibold ${color}`}>{value}</p>
-      <p className="mt-1 text-[11px] font-medium text-text-mute">{label}</p>
-    </div>
   );
 }
