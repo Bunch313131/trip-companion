@@ -18,12 +18,18 @@ export function RemindersCard({
   tripId,
   reminders,
   todayISO,
+  phase,
+  currentStopId,
   onAdd,
   onEdit,
 }: {
   tripId: string;
   reminders: WithId<ReminderDoc>[];
   todayISO: string;
+  /** Trip phase — safety habits only surface once you're travelling. */
+  phase?: 'pre' | 'during' | 'post';
+  /** The stop you're at right now, so stop-pinned safety notes show in context. */
+  currentStopId?: string | null;
   onAdd: () => void;
   onEdit: (r: WithId<ReminderDoc>) => void;
 }) {
@@ -32,9 +38,21 @@ export function RemindersCard({
   const [showUpcoming, setShowUpcoming] = useState(false);
   const [showDone, setShowDone] = useState(false);
 
-  const active = reminders.filter((r) => !r.done);
-  const done = reminders.filter((r) => r.done);
-  const heads = active.filter((r) => (r.dateISO && r.dateISO <= todayISO) || r.standing);
+  // Prep items live in their own pre-trip checklist card — keep them out here.
+  const scoped = reminders.filter((r) => r.category !== 'prep');
+
+  // A safety habit belongs on Today when travelling: pinned ones only at their
+  // stop, un-pinned ones throughout the trip.
+  const safetyShows = (r: WithId<ReminderDoc>) => {
+    if (phase && phase !== 'during') return false;
+    return r.stopId ? r.stopId === currentStopId : true;
+  };
+
+  const active = scoped.filter((r) => !r.done);
+  const done = scoped.filter((r) => r.done);
+  const heads = active.filter((r) =>
+    r.category === 'safety' ? safetyShows(r) : (r.dateISO && r.dateISO <= todayISO) || r.standing
+  );
   const upcoming = active
     .filter((r) => r.dateISO && r.dateISO > todayISO)
     .sort((a, b) => (a.dateISO! < b.dateISO! ? -1 : 1));

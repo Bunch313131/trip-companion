@@ -11,6 +11,8 @@ import { LocationBar } from '@/components/today/location-bar';
 import { TodayTickets, type TicketRef } from '@/components/today/today-tickets';
 import { TomorrowPeek } from '@/components/today/tomorrow-peek';
 import { RemindersCard } from '@/components/today/reminders-card';
+import { PrepChecklist } from '@/components/today/prep-checklist';
+import { EmergencyLink } from '@/components/today/emergency-link';
 import { ReminderForm } from '@/components/reminders/reminder-form';
 import { ScheduleRow, activityToEvent, reservationToEvent, type ScheduleEvent } from '@/components/schedule/schedule-row';
 import { EventDetail, type EventSelection } from '@/components/schedule/event-detail';
@@ -238,13 +240,23 @@ export default function TodayPage() {
 
             <NeedsAttention openTop={openTop} />
 
+            <PrepChecklist
+              tripId={tripId!}
+              reminders={reminders}
+              onEdit={(r) => setReminderForm({ existing: r })}
+            />
+
             <RemindersCard
               tripId={tripId!}
               reminders={reminders}
               todayISO={todayISO}
+              phase={phase}
+              currentStopId={currentStop?.id ?? null}
               onAdd={() => setReminderForm({ existing: null })}
               onEdit={(r) => setReminderForm({ existing: r })}
             />
+
+            <EmergencyLink />
 
             <section className="rounded-card border border-border bg-surface p-4 shadow-card">
               <div className="mb-3 flex items-center justify-between">
@@ -322,6 +334,8 @@ export default function TodayPage() {
               tripId={tripId!}
               reminders={reminders}
               todayISO={todayISO}
+              phase={phase}
+              currentStopId={currentStop?.id ?? null}
               onAdd={() => setReminderForm({ existing: null })}
               onEdit={(r) => setReminderForm({ existing: r })}
             />
@@ -346,6 +360,8 @@ export default function TodayPage() {
             />
 
             <NeedsAttention openTop={openTop} />
+
+            <EmergencyLink />
           </>
         )}
 

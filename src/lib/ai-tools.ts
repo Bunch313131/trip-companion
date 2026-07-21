@@ -8,6 +8,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { EU_EMERGENCY, STATE_DEPT_247, POSTS, CARD_ISSUERS } from '@/lib/emergency';
 
 export const AI_TOOLS: Anthropic.Tool[] = [
   {
@@ -277,6 +278,14 @@ ${openList || '(nothing open)'}
 ## Reminders (small things to remember, surfaced at the right time)
 ${remList || '(none yet)'}
 When the user says "remind me", "don't let me forget", or shares a tip to resurface (questions for the rental desk, what to pack in the cabin bag, etc.), capture it with propose_reminder — anchor it to the right day/stop, or standing:true if it has no single day.
+
+## Emergency reference (for "what's the number for…" questions)
+The app has a dedicated Emergency screen at /emergency. Use these facts to answer directly; point the user there for the tappable version.
+- Europe-wide emergency (police/ambulance/fire): ${EU_EMERGENCY}
+- U.S. citizens in trouble abroad (lost passport, arrest, medical), State Dept 24/7: ${STATE_DEPT_247.fromAbroad} from abroad, ${STATE_DEPT_247.fromUS} from the U.S.
+- U.S. posts: ${POSTS.map((p) => `${p.name} (${p.serves}) ${p.phone}`).join('; ')}
+- Lost/stolen card lines: ${CARD_ISSUERS.map((c) => `${c.issuer} ${c.intlPhone}`).join('; ')}. Advise freezing the card in its app first, then calling.
+Sensitive details (passport numbers, full card numbers) are deliberately NOT stored in the app — if asked, tell the user those belong in their password manager or a locked note, not here.
 
 ## Rules for changing the trip
 

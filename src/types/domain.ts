@@ -120,12 +120,22 @@ export type ReservationDoc = {
 };
 
 // ─── Reminders (small things to remember, surfaced at the right time) ──
+export type ReminderCategory = 'prep' | 'safety';
+
 export type ReminderDoc = {
   title?: string | null; // short label, e.g. "Rental car pickup"
   text: string; // the detail / checklist
   dateISO?: string | null; // YYYY-MM-DD day it surfaces; null = standing
   standing?: boolean; // trip-wide, no single day
   stopId?: string | null;
+  /**
+   * Optional lane a reminder belongs to. Undefined = an everyday reminder
+   * (surfaces by date/standing on the Today card). 'prep' = a before-you-go
+   * checklist item (shows in the pre-trip checklist only). 'safety' = a travel
+   * habit that surfaces during the trip — pinned to a stop if stopId is set,
+   * otherwise shown throughout.
+   */
+  category?: ReminderCategory | null;
   done: boolean;
   lastEditedBy: string;
   createdAt?: Timestamp;

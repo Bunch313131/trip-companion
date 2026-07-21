@@ -35,6 +35,17 @@ export default function SettingsPage() {
           </p>
         </section>
 
+        <Link
+          href="/emergency"
+          className="flex items-center justify-between rounded-card border border-border bg-surface p-4 shadow-card transition-colors hover:border-warning/50"
+        >
+          <div className="flex items-center gap-2">
+            <span aria-hidden>🆘</span>
+            <h2 className="font-display text-sm font-semibold text-text">Emergency info</h2>
+          </div>
+          <span className="text-xs font-medium text-primary">Open →</span>
+        </Link>
+
         <InstallPrompt />
 
         <SignOutButton />
