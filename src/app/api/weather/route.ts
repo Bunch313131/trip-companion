@@ -52,24 +52,29 @@ export async function GET(request: Request) {
     const d = data.daily;
     const round = (v: unknown) => (v == null ? null : Math.round(Number(v)));
 
-    const days = (d?.time ?? []).map((date: string, i: number) => ({
-      date,
-      code: d.weather_code[i],
-      tempMax: Math.round(d.temperature_2m_max[i]),
-      tempMin: Math.round(d.temperature_2m_min[i]),
-      precipProb: d.precipitation_probability_max?.[i] ?? null,
-      ...(detail
-        ? {
-            precipSum: d.precipitation_sum?.[i] ?? null,
-            windMax: round(d.wind_speed_10m_max?.[i]),
-            uvMax: d.uv_index_max?.[i] ?? null,
-            sunrise: d.sunrise?.[i] ?? null,
-            sunset: d.sunset?.[i] ?? null,
-            feelsMax: round(d.apparent_temperature_max?.[i]),
-            feelsMin: round(d.apparent_temperature_min?.[i]),
-          }
-        : {}),
-    }));
+    const days = (d?.time ?? [])
+      // Drop edge-of-horizon days whose temperature comes back null (they'd
+      // otherwise render as a bogus 0°/32°F).
+      .map((date: string, i: number) => ({ date, i }))
+      .filter(({ i }: { i: number }) => d.temperature_2m_max?.[i] != null && d.temperature_2m_min?.[i] != null)
+      .map(({ date, i }: { date: string; i: number }) => ({
+        date,
+        code: d.weather_code[i],
+        tempMax: Math.round(d.temperature_2m_max[i]),
+        tempMin: Math.round(d.temperature_2m_min[i]),
+        precipProb: d.precipitation_probability_max?.[i] ?? null,
+        ...(detail
+          ? {
+              precipSum: d.precipitation_sum?.[i] ?? null,
+              windMax: round(d.wind_speed_10m_max?.[i]),
+              uvMax: d.uv_index_max?.[i] ?? null,
+              sunrise: d.sunrise?.[i] ?? null,
+              sunset: d.sunset?.[i] ?? null,
+              feelsMax: round(d.apparent_temperature_max?.[i]),
+              feelsMin: round(d.apparent_temperature_min?.[i]),
+            }
+          : {}),
+      }));
 
     if (!detail) {
       return NextResponse.json({ days } as WeatherResponse);

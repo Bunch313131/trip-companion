@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       if (wr.ok) {
         const json = await wr.json();
         const wd = json.daily;
-        if (wd?.time?.length) {
+        if (wd?.time?.length && wd.temperature_2m_max?.[0] != null) {
           const wx = weatherCode(wd.weather_code[0]);
           const hi = cToF(wd.temperature_2m_max[0]);
           const lo = cToF(wd.temperature_2m_min[0]);

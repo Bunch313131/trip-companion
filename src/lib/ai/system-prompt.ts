@@ -49,10 +49,13 @@ async function weatherSummary(stops: StopLite[], today: string): Promise<string 
       const d = arr[i]?.daily;
       const date = s.arrive_on < today ? today : s.arrive_on;
       const idx = d?.time?.indexOf(date) ?? -1;
-      if (!d || idx < 0) return `- ${s.city} (${date}): forecast appears closer to the date`;
+      const tmax = idx >= 0 ? d?.temperature_2m_max?.[idx] : null;
+      const tmin = idx >= 0 ? d?.temperature_2m_min?.[idx] : null;
+      if (!d || idx < 0 || tmax == null || tmin == null)
+        return `- ${s.city} (${date}): forecast appears closer to the date`;
       const wx = weatherCode(d.weather_code[idx]);
-      const hi = cToF(d.temperature_2m_max[idx]);
-      const lo = cToF(d.temperature_2m_min[idx]);
+      const hi = cToF(tmax);
+      const lo = cToF(tmin);
       const pop = d.precipitation_probability_max?.[idx];
       return `- ${s.city} (${date}): ${wx.label}, ${hi}/${lo}°F${
         pop != null ? `, ${pop}% chance of rain` : ''

@@ -40,12 +40,16 @@ export async function POST(request: Request) {
       const d = arr[i]?.daily;
       let day = null;
       const idx = d?.time?.indexOf(s.date) ?? -1;
-      if (d && idx >= 0) {
+      const tmax = idx >= 0 ? d?.temperature_2m_max?.[idx] : null;
+      const tmin = idx >= 0 ? d?.temperature_2m_min?.[idx] : null;
+      // At the edge of the forecast horizon the date can appear with null
+      // values — treat that as "no data yet" rather than a bogus 0°.
+      if (d && idx >= 0 && tmax != null && tmin != null) {
         day = {
           date: s.date,
           code: d.weather_code[idx],
-          tempMax: Math.round(d.temperature_2m_max[idx]),
-          tempMin: Math.round(d.temperature_2m_min[idx]),
+          tempMax: Math.round(tmax),
+          tempMin: Math.round(tmin),
           precipProb: d.precipitation_probability_max?.[idx] ?? null,
         };
       }
