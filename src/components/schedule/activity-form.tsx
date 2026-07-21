@@ -136,7 +136,6 @@ export function ActivityForm({
                   onChange={(e) => setTitle(e.target.value)}
                   className={inputCls}
                   placeholder="Rhine Falls, dinner at…"
-                  autoFocus
                 />
               </Field>
 

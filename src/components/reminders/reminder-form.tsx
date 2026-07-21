@@ -98,7 +98,6 @@ export function ReminderForm({
                   rows={3}
                   className={inputCls}
                   placeholder="At the rental desk, ask: winter equipment? cross-border fee? fuel policy?"
-                  autoFocus
                 />
               </Field>
 
