@@ -3,14 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppHeader } from '@/components/nav/app-header';
-import { ChatMessage, StreamingMessage } from '@/components/chat/message';
+import { ChatMessage, StreamingMessage, UserBubble, type Sender } from '@/components/chat/message';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useTrip } from '@/lib/trip-context';
 import { useAuth } from '@/lib/auth-context';
 import { useKeyboardOpen } from '@/lib/use-keyboard';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { getTripPhase } from '@/lib/constants';
+import { avatarColor, initialOf } from '@/lib/avatar';
 import type { ChatMessageDoc, ProposalDoc, WithId } from '@/types/domain';
+
+type MemberLite = { role?: string; email?: string | null; displayName?: string | null };
 
 export default function ChatPage() {
   const { trip, tripId } = useTrip();
@@ -21,11 +24,31 @@ export default function ChatPage() {
     orderBy('createdAt', 'asc')
   );
   const { docs: proposals } = useTripCollection<ProposalDoc>(tripId, 'proposals');
+  const { docs: members } = useTripCollection<MemberLite>(tripId, 'members');
 
   const proposalsById = useMemo(
     () => new Map(proposals.map((p) => [p.id, p] as const)),
     [proposals]
   );
+
+  // uid → display name (fall back to the email's local part).
+  const memberName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const mem of members) {
+      m.set(mem.id, mem.displayName || mem.email?.split('@')[0] || 'Traveler');
+    }
+    return m;
+  }, [members]);
+
+  const senderFor = (userId?: string | null): Sender => {
+    const uid = userId ?? '';
+    const name = memberName.get(uid) ?? 'Traveler';
+    return {
+      label: uid && uid === user?.uid ? 'You' : name,
+      initial: initialOf(name),
+      color: avatarColor(uid || 'x'),
+    };
+  };
 
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
@@ -136,14 +159,11 @@ export default function ChatPage() {
                     message={m}
                     proposalsById={proposalsById}
                     tripId={tripId!}
+                    sender={m.role === 'user' ? senderFor(m.userId) : undefined}
                   />
                 ))}
                 {showOptimistic && (
-                  <div className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary-soft px-3.5 py-2 text-sm text-text">
-                      {optimisticUser}
-                    </div>
-                  </div>
+                  <UserBubble content={optimisticUser!} sender={senderFor(user?.uid)} />
                 )}
                 {streaming &&
                   (streamingText ? (
