@@ -71,9 +71,15 @@ export async function POST(request: Request) {
 
   const systemText = await buildTripSystemPrompt(tripId);
   const effort = classifyEffort(message);
-  const generationConfig = effortConfig(effort);
-  const model = modelFor(effort);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${KEY}`;
+  const urlFor = (m: string) =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${m}:streamGenerateContent?alt=sse&key=${KEY}`;
+
+  // Start on the effort-chosen model. The deep tier (Gemini Pro) has a stingy
+  // free-tier per-minute limit; if it 429s before we've streamed anything, we
+  // transparently fall back to the quick tier (Flash) so the chat still answers.
+  const quickModel = modelFor('quick');
+  let activeModel = modelFor(effort);
+  let activeConfig = effortConfig(effort);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -90,19 +96,36 @@ export async function POST(request: Request) {
 
       try {
         for (let turn = 0; turn < 6; turn++) {
-          const resp = await fetch(url, {
+          const resp = await fetch(urlFor(activeModel), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemText }] },
               tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-              generationConfig,
+              generationConfig: activeConfig,
               contents,
             }),
           });
           if (!resp.ok || !resp.body) {
             const errText = await resp.text().catch(() => '');
-            throw new Error(`Gemini ${resp.status}: ${errText.slice(0, 160)}`);
+            // Deep tier throttled on the free plan? Retry once on Flash before
+            // giving up — as long as we haven't streamed any answer yet.
+            if (
+              (resp.status === 429 || resp.status === 503) &&
+              activeModel !== quickModel &&
+              !assistantText
+            ) {
+              activeModel = quickModel;
+              activeConfig = effortConfig('quick');
+              send('mode', { effort: 'quick' });
+              turn--; // retry this turn on the fallback model
+              continue;
+            }
+            const friendly =
+              resp.status === 429
+                ? 'The trip companion is briefly rate-limited on the free plan. Give it a few seconds and try again.'
+                : `Gemini ${resp.status}: ${errText.slice(0, 160)}`;
+            throw new Error(friendly);
           }
 
           // Parse the SSE stream, accumulating text + function calls for this turn.
