@@ -122,6 +122,25 @@ export async function createProposalFromTool(
           ? input.reminder_id
           : input.reservation_id;
 
+  // Validate the target exists for anything other than an add, so we never
+  // create a card that can only fail on approval. If the model aimed at a
+  // hallucinated id — or the wrong collection (flights/hotels are reservations,
+  // not activities) — throw. The chat route feeds this back to the model as a
+  // tool error so it can retry against the right record.
+  if (input.operation !== 'add') {
+    const noun = entity.replace(/s$/, '');
+    if (!idField) {
+      throw new Error(`Missing ${noun} id — I need the id of the existing item to ${input.operation} it.`);
+    }
+    const targetSnap = await adminDb().doc(`trips/${tripId}/${entity}/${idField}`).get();
+    if (!targetSnap.exists) {
+      throw new Error(
+        `No ${noun} with id "${idField}" exists. Re-check the ids in the trip context — ` +
+          `flights and hotels are reservations, not activities.`
+      );
+    }
+  }
+
   const { data, diff } = mapChanges(input.changes);
 
   // For add operations on activities/reservations/reminders, carry the stopId link.
