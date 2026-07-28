@@ -99,11 +99,12 @@ export function ChatInput({
           </div>
         )}
 
+        {/* No `capture` attribute: iOS then offers Photo Library, Take Photo,
+            and Choose File — forcing capture would hide the library. */}
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
           hidden
           onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
         />
