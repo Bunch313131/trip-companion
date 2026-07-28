@@ -6,6 +6,7 @@ import { StopCard } from '@/components/itinerary/stop-card';
 import { useTrip } from '@/lib/trip-context';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { dateRange } from '@/lib/format';
+import { toISODate } from '@/lib/trip-logic';
 import type { StopDoc, ActivityDoc, ReservationDoc } from '@/types/domain';
 
 export default function ItineraryPage() {
@@ -19,6 +20,7 @@ export default function ItineraryPage() {
   const { docs: reservations } = useTripCollection<ReservationDoc>(tripId, 'reservations');
 
   const [fullDetail, setFullDetail] = useState(false);
+  const todayISO = toISODate(new Date());
 
   const visibleStops = stops.filter((s) => s.status !== 'cancelled');
   const confirmedCount = visibleStops.filter((s) => s.status === 'confirmed').length;
@@ -94,6 +96,7 @@ export default function ItineraryPage() {
                 reservations={reservations.filter((r) => r.stopId === stop.id)}
                 isLast={i === visibleStops.length - 1}
                 showFullDetail={fullDetail}
+                todayISO={todayISO}
               />
             ))}
           </div>

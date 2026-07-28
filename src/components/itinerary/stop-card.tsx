@@ -34,6 +34,25 @@ function shortDate(iso: string) {
   });
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
+      aria-hidden
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export function StopCard({
   stop,
   index,
@@ -42,6 +61,7 @@ export function StopCard({
   tripId,
   isLast = false,
   showFullDetail = false,
+  todayISO,
 }: {
   stop: WithId<StopDoc>;
   index: number;
@@ -50,11 +70,27 @@ export function StopCard({
   tripId: string;
   isLast?: boolean;
   showFullDetail?: boolean;
+  todayISO?: string;
 }) {
   const { user } = useAuth();
   const uid = user?.uid ?? '';
   const editable = !!uid;
   const save = (changes: Record<string, unknown>) => patchStop(tripId, stop.id, uid, changes);
+
+  // A stop the traveler has already left (departed before today) starts
+  // collapsed to its header so the list opens on where they are now, not the
+  // top of the trip. Days inside the *current* stop that have passed collapse
+  // the same way. Nothing collapses if we don't know today's date.
+  const stopIsPast = !!todayISO && stop.departOn < todayISO;
+  const [stopOpen, setStopOpen] = useState(!stopIsPast);
+  // Past days the user has tapped open (only relevant for the current stop).
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+  const toggleDay = (day: string) =>
+    setOpenDays((prev) => {
+      const next = new Set(prev);
+      next.has(day) ? next.delete(day) : next.add(day);
+      return next;
+    });
 
   // Drill-in detail + activity add/edit.
   const [selection, setSelection] = useState<EventSelection | null>(null);
@@ -106,7 +142,7 @@ export function StopCard({
   const scheduledCount = Object.values(byDay).reduce((n, l) => n + l.length, 0);
 
   return (
-    <div className={`flex gap-3 ${dimmed ? 'opacity-70' : ''}`}>
+    <div className={`flex gap-3 ${dimmed || (stopIsPast && !stopOpen) ? 'opacity-60' : ''}`}>
       {/* Timeline spine — colored node + connecting line */}
       <div className="flex w-7 shrink-0 flex-col items-center pt-1">
         <span
@@ -177,6 +213,17 @@ export function StopCard({
           </div>
         </div>
 
+        {stopIsPast && !stopOpen ? (
+          <button
+            type="button"
+            onClick={() => setStopOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-[11.5px] font-medium text-text-dim transition-colors hover:text-text"
+          >
+            <Chevron open={false} />
+            Show {days.length} {days.length === 1 ? 'day' : 'days'}
+          </button>
+        ) : (
+        <>
         {/* Lodging line */}
         {hotel && (
           <button
@@ -212,21 +259,46 @@ export function StopCard({
           </div>
         )}
 
-        {/* Day-by-day schedule */}
+        {/* Day-by-day schedule. Within the current stop, days already gone
+            collapse to a tappable one-liner so the card opens on today. */}
         <div className="mt-3 space-y-3 border-t border-border pt-3">
           {days.map((day, i) => {
             const evs = byDay[day] ?? [];
+            const dayIsPast = !stopIsPast && !!todayISO && day < todayISO;
+            const dayIsToday = !!todayISO && day === todayISO;
+            const dayOpen = !dayIsPast || openDays.has(day);
             return (
               <div key={day}>
                 <div className="mb-1 flex items-center justify-between">
-                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-mute">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: stop.color }}
-                    />
-                    Day {i + 1} · {fmtDayLabel(day)}
-                  </p>
-                  {editable && (
+                  {dayIsPast ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-mute transition-colors hover:text-text-dim"
+                    >
+                      <Chevron open={dayOpen} />
+                      Day {i + 1} · {fmtDayLabel(day)}
+                      {!dayOpen && evs.length > 0 && (
+                        <span className="tracking-normal text-text-mute normal-case">
+                          · {evs.length} {evs.length === 1 ? 'event' : 'events'}
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-mute">
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: stop.color }}
+                      />
+                      Day {i + 1} · {fmtDayLabel(day)}
+                      {dayIsToday && (
+                        <span className="rounded bg-primary-soft px-1.5 py-0.5 text-[9.5px] font-bold tracking-normal text-primary normal-case">
+                          Today
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {editable && dayOpen && (
                     <button
                       type="button"
                       onClick={() => setActivityForm({ existing: null, date: day })}
@@ -236,11 +308,12 @@ export function StopCard({
                     </button>
                   )}
                 </div>
-                {evs.length > 0 ? (
-                  evs.map((e) => <ScheduleRow key={e.id} event={e} onClick={() => openEvent(e)} />)
-                ) : (
-                  <p className="pl-3.5 text-xs text-text-mute">Open day</p>
-                )}
+                {dayOpen &&
+                  (evs.length > 0 ? (
+                    evs.map((e) => <ScheduleRow key={e.id} event={e} onClick={() => openEvent(e)} />)
+                  ) : (
+                    <p className="pl-3.5 text-xs text-text-mute">Open day</p>
+                  ))}
               </div>
             );
           })}
@@ -280,6 +353,19 @@ export function StopCard({
           >
             + Add the first activity
           </button>
+        )}
+
+        {stopIsPast && (
+          <button
+            type="button"
+            onClick={() => setStopOpen(false)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-[11.5px] font-medium text-text-dim transition-colors hover:text-text"
+          >
+            <Chevron open />
+            Collapse
+          </button>
+        )}
+        </>
         )}
 
         {/* Drill-in detail + activity add/edit */}
