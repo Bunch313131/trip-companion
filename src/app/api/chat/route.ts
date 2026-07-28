@@ -133,7 +133,10 @@ export async function POST(request: Request) {
     }));
 
   const systemText = await buildTripSystemPrompt(tripId);
-  const effort = classifyEffort(message);
+  // A photo routes to the fast, vision-capable tier: Flash is reliable and
+  // quick and handles images well (it's what document import uses), which
+  // avoids the slow deep-thinking path timing out on image-heavy turns.
+  const effort = imageFile ? 'quick' : classifyEffort(message);
   const urlFor = (m: string) =>
     `https://generativelanguage.googleapis.com/v1beta/models/${m}:streamGenerateContent?alt=sse&key=${KEY}`;
 
@@ -166,35 +169,62 @@ export async function POST(request: Request) {
 
       try {
         for (let turn = 0; turn < 6; turn++) {
-          const resp = await fetch(urlFor(activeModel), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemText }] },
-              tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-              generationConfig: activeConfig,
-              contents,
-            }),
-          });
+          // Guard every call with an abort timeout comfortably under Vercel's
+          // 60s function limit. The deep tier (Pro + dynamic thinking) can
+          // otherwise think past the limit and get killed mid-request, which
+          // looked like a message vanishing with no reply. Fast-tier attempts
+          // get a shorter budget so a fallback still fits inside the window.
+          const budgetMs = activeModel === quickModel ? 30_000 : 38_000;
+          let resp: Response;
+          try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), budgetMs);
+            try {
+              resp = await fetch(urlFor(activeModel), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  systemInstruction: { parts: [{ text: systemText }] },
+                  tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+                  generationConfig: activeConfig,
+                  contents,
+                }),
+                signal: ctrl.signal,
+              });
+            } finally {
+              clearTimeout(timer);
+            }
+          } catch {
+            // Timed out or the network failed before any reply streamed. Drop
+            // to the fast tier once — it's quick and reliable.
+            if (activeModel !== quickModel && !assistantText) {
+              activeModel = quickModel;
+              activeConfig = effortConfig('quick');
+              send('mode', { effort: 'quick' });
+              turn--;
+              continue;
+            }
+            throw new Error(
+              'The trip companion took too long to respond. Please try again in a moment.'
+            );
+          }
+
           if (!resp.ok || !resp.body) {
             const errText = await resp.text().catch(() => '');
-            // Deep tier throttled on the free plan? Retry once on Flash before
-            // giving up — as long as we haven't streamed any answer yet.
-            if (
-              (resp.status === 429 || resp.status === 503) &&
-              activeModel !== quickModel &&
-              !assistantText
-            ) {
+            // Any upstream failure before we've streamed a reply → fall back to
+            // the fast tier once (covers rate limits, 5xx, and bad responses).
+            if (activeModel !== quickModel && !assistantText) {
               activeModel = quickModel;
               activeConfig = effortConfig('quick');
               send('mode', { effort: 'quick' });
               turn--; // retry this turn on the fallback model
               continue;
             }
+            console.error(`Gemini ${activeModel} ${resp.status}: ${errText.slice(0, 300)}`);
             const friendly =
               resp.status === 429
                 ? 'The trip companion is briefly rate-limited on the free plan. Give it a few seconds and try again.'
-                : `Gemini ${resp.status}: ${errText.slice(0, 160)}`;
+                : `The trip companion hit an error (${resp.status}). Please try again.`;
             throw new Error(friendly);
           }
 
@@ -265,6 +295,15 @@ export async function POST(request: Request) {
             continue;
           }
           break;
+        }
+
+        // Never end silently. If the model produced no text and no proposal
+        // (e.g. a deep-tier stall), surface a visible reply instead of a blank
+        // turn that reads as a lost message.
+        if (!assistantText.trim() && proposalIds.length === 0) {
+          const note = "Sorry — I couldn't put a response together just then. Mind trying again?";
+          assistantText = note;
+          send('delta', { text: note });
         }
 
         await chatRef.add({
