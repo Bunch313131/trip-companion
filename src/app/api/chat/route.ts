@@ -1,5 +1,6 @@
+import { randomUUID } from 'crypto';
 import { FieldValue } from 'firebase-admin/firestore';
-import { adminDb, requireTripAccess } from '@/lib/firebase-admin';
+import { adminDb, adminStorage, requireTripAccess } from '@/lib/firebase-admin';
 import { AI_TOOLS } from '@/lib/ai-tools';
 import { buildTripSystemPrompt } from '@/lib/ai/system-prompt';
 import { createProposalFromTool } from '@/lib/ai/create-proposal';
@@ -7,6 +8,8 @@ import { classifyEffort, effortConfig, modelFor } from '@/lib/ai/effort';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 // Gemini free tier: function calling works; Google Search grounding needs a
 // paid tier, so it's omitted. Model + thinking are chosen per message by the
@@ -22,6 +25,7 @@ const FUNCTION_DECLARATIONS = AI_TOOLS.filter((t) => t.name.startsWith('propose_
 
 type GeminiPart = {
   text?: string;
+  inline_data?: { mime_type: string; data: string };
   functionCall?: { name: string; args: Record<string, unknown> };
   functionResponse?: { name: string; response: Record<string, unknown> };
   // Gemini 3.x attaches a thought signature to function-call parts that MUST
@@ -30,15 +34,35 @@ type GeminiPart = {
 };
 
 export async function POST(request: Request) {
-  let body: { tripId?: string; message?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const contentType = request.headers.get('content-type') || '';
+  let tripId: string | undefined;
+  let message = '';
+  let imageFile: File | null = null;
+
+  if (contentType.includes('multipart/form-data')) {
+    // A photo was attached — read the multipart form.
+    try {
+      const form = await request.formData();
+      tripId = (form.get('tripId') as string) || undefined;
+      message = ((form.get('message') as string) || '').toString();
+      const f = form.get('image');
+      if (f instanceof File && f.size > 0) imageFile = f;
+    } catch {
+      return Response.json({ error: 'Invalid form data' }, { status: 400 });
+    }
+  } else {
+    // Text-only: the original JSON path, unchanged.
+    try {
+      const body = (await request.json()) as { tripId?: string; message?: string };
+      tripId = body.tripId;
+      message = (body.message || '').toString();
+    } catch {
+      return Response.json({ error: 'Invalid body' }, { status: 400 });
+    }
   }
-  const { tripId, message } = body;
-  if (!tripId || !message?.trim()) {
-    return Response.json({ error: 'tripId and message are required' }, { status: 400 });
+
+  if (!tripId || (!message.trim() && !imageFile)) {
+    return Response.json({ error: 'tripId and a message or photo are required' }, { status: 400 });
   }
 
   let uid: string;
@@ -56,7 +80,46 @@ export async function POST(request: Request) {
   const db = adminDb();
   const chatRef = db.collection(`trips/${tripId}/chatMessages`);
 
-  await chatRef.add({ role: 'user', userId: uid, content: message, createdAt: FieldValue.serverTimestamp() });
+  // If a photo was attached: validate, store it (so it shows in the shared
+  // thread + survives reload), and build the inline part Gemini reads. A
+  // Storage failure is non-fatal — Gemini still sees the image inline.
+  let imagePart: GeminiPart | null = null;
+  let imageUrl: string | null = null;
+  let imageMime: string | null = null;
+  if (imageFile) {
+    const mime = imageFile.type || 'application/octet-stream';
+    if (!/^image\//.test(mime)) {
+      return Response.json({ error: 'Only image files are supported' }, { status: 415 });
+    }
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    if (buffer.length > MAX_IMAGE_BYTES) {
+      return Response.json({ error: 'Image is larger than 20MB' }, { status: 413 });
+    }
+    try {
+      const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!;
+      const bucket = adminStorage().bucket(bucketName);
+      const safeName = (imageFile.name || 'photo').replace(/[^\w.\-]+/g, '_') || 'photo';
+      const path = `chat/${tripId}/${randomUUID().slice(0, 8)}/${safeName}`;
+      const token = randomUUID();
+      await bucket.file(path).save(buffer, {
+        contentType: mime,
+        metadata: { metadata: { firebaseStorageDownloadTokens: token } },
+      });
+      imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+      imageMime = mime;
+    } catch {
+      imageUrl = null;
+    }
+    imagePart = { inline_data: { mime_type: mime, data: buffer.toString('base64') } };
+  }
+
+  await chatRef.add({
+    role: 'user',
+    userId: uid,
+    content: message,
+    ...(imageUrl ? { imageUrl, imageMime } : {}),
+    createdAt: FieldValue.serverTimestamp(),
+  });
 
   // Recent history as Gemini contents (assistant → 'model').
   const histSnap = await chatRef.orderBy('createdAt', 'desc').limit(20).get();
@@ -88,6 +151,13 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 
       const contents: Array<{ role: string; parts: GeminiPart[] }> = [...history];
+      // Attach the photo to the current user turn (history carries text only,
+      // so a photo-only message has no text turn — add one for the image).
+      if (imagePart) {
+        const last = contents[contents.length - 1];
+        if (last && last.role === 'user') last.parts.push(imagePart);
+        else contents.push({ role: 'user', parts: [imagePart] });
+      }
       const proposalIds: string[] = [];
       let assistantText = '';
 

@@ -24,7 +24,7 @@ export function ChatMessage({
   sender?: Sender;
 }) {
   if (message.role === 'user') {
-    return <UserBubble content={message.content} sender={sender} />;
+    return <UserBubble content={message.content} imageUrl={message.imageUrl} sender={sender} />;
   }
 
   const proposals = (message.proposalIds ?? [])
@@ -45,17 +45,38 @@ export function ChatMessage({
   );
 }
 
-/** A human message: right-aligned bubble with the sender's avatar + name. */
-export function UserBubble({ content, sender }: { content: string; sender?: Sender }) {
+/** A human message: right-aligned bubble with the sender's avatar + name.
+ *  May carry an attached photo shown above the text. */
+export function UserBubble({
+  content,
+  imageUrl,
+  sender,
+}: {
+  content: string;
+  imageUrl?: string | null;
+  sender?: Sender;
+}) {
   return (
     <div className="flex items-end justify-end gap-2">
       <div className="flex min-w-0 max-w-[80%] flex-col items-end">
         {sender && (
           <span className="mb-0.5 mr-1 text-[10px] font-medium text-text-mute">{sender.label}</span>
         )}
-        <div className="max-w-full rounded-2xl rounded-br-sm bg-primary-soft px-3.5 py-2 text-sm text-text">
-          {content}
-        </div>
+        {imageUrl && (
+          <a href={imageUrl} target="_blank" rel="noreferrer" className="mb-1 block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt="Attached photo"
+              className="max-h-56 max-w-full rounded-2xl rounded-br-sm border border-border object-cover"
+            />
+          </a>
+        )}
+        {content && (
+          <div className="max-w-full rounded-2xl rounded-br-sm bg-primary-soft px-3.5 py-2 text-sm text-text">
+            {content}
+          </div>
+        )}
       </div>
       {sender && <Avatar initial={sender.initial} color={sender.color} />}
     </div>

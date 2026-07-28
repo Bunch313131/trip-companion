@@ -53,7 +53,9 @@ export default function ChatPage() {
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [deepMode, setDeepMode] = useState(false);
-  const [optimisticUser, setOptimisticUser] = useState<string | null>(null);
+  const [optimisticUser, setOptimisticUser] = useState<
+    { text: string; imageUrl: string | null } | null
+  >(null);
   // The finished answer, kept on screen until its persisted copy arrives over
   // Firestore's realtime listener. The stream (SSE) and the saved doc are two
   // separate channels; without this bridge the answer vanishes in the gap
@@ -73,7 +75,7 @@ export default function ChatPage() {
   // Hide the optimistic user bubble once its persisted copy arrives.
   const showOptimistic =
     optimisticUser !== null &&
-    !messages.some((m) => m.role === 'user' && m.content === optimisticUser);
+    !messages.some((m) => m.role === 'user' && m.content === optimisticUser.text);
 
   // Keep the streamed answer visible until the saved assistant message shows up.
   const answerPersisted =
@@ -84,19 +86,34 @@ export default function ChatPage() {
     if (answerPersisted) setPendingAnswer(null);
   }, [answerPersisted]);
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, image?: File | null) {
     if (!tripId || !user) return;
-    setOptimisticUser(text);
+    const previewUrl = image ? URL.createObjectURL(image) : null;
+    setOptimisticUser({ text, imageUrl: previewUrl });
     setStreaming(true);
     setStreamingText('');
     setDeepMode(false);
     try {
       const token = await user.getIdToken();
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tripId, message: text }),
-      });
+      // With a photo we post multipart; text-only keeps the original JSON path.
+      let res: Response;
+      if (image) {
+        const fd = new FormData();
+        fd.append('tripId', tripId);
+        fd.append('message', text);
+        fd.append('image', image);
+        res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      } else {
+        res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tripId, message: text }),
+        });
+      }
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Chat failed (${res.status})`);
@@ -135,6 +152,7 @@ export default function ChatPage() {
       setStreamingText('');
       setDeepMode(false);
       setOptimisticUser(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
     }
   }
 
@@ -183,7 +201,11 @@ export default function ChatPage() {
                   />
                 ))}
                 {showOptimistic && (
-                  <UserBubble content={optimisticUser!} sender={senderFor(user?.uid)} />
+                  <UserBubble
+                    content={optimisticUser!.text}
+                    imageUrl={optimisticUser!.imageUrl}
+                    sender={senderFor(user?.uid)}
+                  />
                 )}
                 {streaming &&
                   (streamingText ? (
