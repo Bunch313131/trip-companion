@@ -34,6 +34,7 @@ type GeminiPart = {
 };
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   const contentType = request.headers.get('content-type') || '';
   let tripId: string | undefined;
   let message = '';
@@ -163,107 +164,110 @@ export async function POST(request: Request) {
       }
       const proposalIds: string[] = [];
       let assistantText = '';
+      // If every attempt fails we surface this instead of a silent, lost turn.
+      let failNote = '';
+      // Hard wall-clock budget: finish and persist a reply before Vercel's 60s
+      // function limit kills us mid-stream (which is what made messages vanish).
+      const deadline = startedAt + 55_000;
 
       // Tell the client which effort level we chose (drives the indicator).
       send('mode', { effort });
 
       try {
         for (let turn = 0; turn < 6; turn++) {
-          // Guard every call with an abort timeout comfortably under Vercel's
-          // 60s function limit. The deep tier (Pro + dynamic thinking) can
-          // otherwise think past the limit and get killed mid-request, which
-          // looked like a message vanishing with no reply. Fast-tier attempts
-          // get a shorter budget so a fallback still fits inside the window.
-          const budgetMs = activeModel === quickModel ? 30_000 : 38_000;
-          let resp: Response;
-          try {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), budgetMs);
-            try {
-              resp = await fetch(urlFor(activeModel), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  systemInstruction: { parts: [{ text: systemText }] },
-                  tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-                  generationConfig: activeConfig,
-                  contents,
-                }),
-                signal: ctrl.signal,
-              });
-            } finally {
-              clearTimeout(timer);
-            }
-          } catch {
-            // Timed out or the network failed before any reply streamed. Drop
-            // to the fast tier once — it's quick and reliable.
-            if (activeModel !== quickModel && !assistantText) {
-              activeModel = quickModel;
-              activeConfig = effortConfig('quick');
-              send('mode', { effort: 'quick' });
-              turn--;
-              continue;
-            }
-            throw new Error(
-              'The trip companion took too long to respond. Please try again in a moment.'
-            );
-          }
+          const remaining = deadline - Date.now();
+          if (remaining < 4_000) break; // no time for another round — persist what we have
 
-          if (!resp.ok || !resp.body) {
-            const errText = await resp.text().catch(() => '');
-            // Any upstream failure before we've streamed a reply → fall back to
-            // the fast tier once (covers rate limits, 5xx, and bad responses).
-            if (activeModel !== quickModel && !assistantText) {
-              activeModel = quickModel;
-              activeConfig = effortConfig('quick');
-              send('mode', { effort: 'quick' });
-              turn--; // retry this turn on the fallback model
-              continue;
-            }
-            console.error(`Gemini ${activeModel} ${resp.status}: ${errText.slice(0, 300)}`);
-            const friendly =
-              resp.status === 429
-                ? 'The trip companion is briefly rate-limited on the free plan. Give it a few seconds and try again.'
-                : `The trip companion hit an error (${resp.status}). Please try again.`;
-            throw new Error(friendly);
-          }
-
-          // Parse the SSE stream, accumulating text + function calls for this turn.
-          const reader = resp.body.getReader();
-          const decoder = new TextDecoder();
-          let buf = '';
+          // Give the slow deep tier a shorter leash on its first attempt so a
+          // Flash fallback still fits inside the budget; otherwise use all the
+          // time left. The timer stays armed through streaming below, so a
+          // reply that streams too slowly aborts here rather than getting
+          // killed by Vercel mid-stream (the actual cause of lost messages).
+          const leash =
+            activeModel !== quickModel && !assistantText ? Math.min(remaining, 32_000) : remaining;
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), leash);
           let turnText = '';
-          // Store whole parts so the thoughtSignature rides along.
           const functionCallParts: GeminiPart[] = [];
 
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const lines = buf.split('\n');
-            buf = lines.pop() ?? '';
-            for (const line of lines) {
-              if (!line.startsWith('data:')) continue;
-              const json = line.slice(5).trim();
-              if (!json) continue;
-              let chunk;
-              try {
-                chunk = JSON.parse(json);
-              } catch {
-                continue;
-              }
-              const parts: GeminiPart[] = chunk?.candidates?.[0]?.content?.parts ?? [];
-              for (const p of parts) {
-                if (p.text) {
-                  turnText += p.text;
-                  assistantText += p.text;
-                  send('delta', { text: p.text });
-                } else if (p.functionCall) {
-                  functionCallParts.push(p); // whole part, incl. thoughtSignature
+          try {
+            const resp = await fetch(urlFor(activeModel), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemText }] },
+                tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+                generationConfig: activeConfig,
+                contents,
+              }),
+              signal: ctrl.signal,
+            });
+
+            if (!resp.ok || !resp.body) {
+              const errText = await resp.text().catch(() => '');
+              console.error(`Gemini ${activeModel} ${resp.status}: ${errText.slice(0, 300)}`);
+              failNote =
+                resp.status === 429
+                  ? 'The trip companion is briefly rate-limited on the free plan. Give it a few seconds and try again.'
+                  : `The trip companion hit an error (${resp.status}). Please try again.`;
+              throw new Error(`upstream ${resp.status}`);
+            }
+
+            // Parse the SSE stream, accumulating text + function calls. The
+            // abort timer above is still armed, so a long stream aborts here.
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              buf += decoder.decode(value, { stream: true });
+              const lines = buf.split('\n');
+              buf = lines.pop() ?? '';
+              for (const line of lines) {
+                if (!line.startsWith('data:')) continue;
+                const json = line.slice(5).trim();
+                if (!json) continue;
+                let chunk;
+                try {
+                  chunk = JSON.parse(json);
+                } catch {
+                  continue;
+                }
+                const parts: GeminiPart[] = chunk?.candidates?.[0]?.content?.parts ?? [];
+                for (const p of parts) {
+                  if (p.text) {
+                    turnText += p.text;
+                    assistantText += p.text;
+                    send('delta', { text: p.text });
+                  } else if (p.functionCall) {
+                    functionCallParts.push(p); // whole part, incl. thoughtSignature
+                  }
                 }
               }
             }
+          } catch (e) {
+            clearTimeout(timer);
+            // Timeout (our abort), network error, or non-OK upstream. If nothing
+            // has streamed yet and we're on the slow tier, retry once on Flash.
+            // Otherwise stop looping and persist whatever we have — never silent.
+            if (activeModel !== quickModel && !assistantText) {
+              activeModel = quickModel;
+              activeConfig = effortConfig('quick');
+              send('mode', { effort: 'quick' });
+              failNote = '';
+              turn--;
+              continue;
+            }
+            if (!failNote) {
+              const aborted = (e as Error)?.name === 'AbortError' || ctrl.signal.aborted;
+              failNote = aborted
+                ? 'The trip companion took a bit too long just now — please try again.'
+                : 'The trip companion hit a snag just now — please try again.';
+            }
+            break;
           }
+          clearTimeout(timer);
 
           if (functionCallParts.length > 0) {
             // Echo the model turn (text + function-call parts incl. their
@@ -298,10 +302,12 @@ export async function POST(request: Request) {
         }
 
         // Never end silently. If the model produced no text and no proposal
-        // (e.g. a deep-tier stall), surface a visible reply instead of a blank
-        // turn that reads as a lost message.
+        // (a stall, timeout, or upstream error), surface a visible reply —
+        // the specific failNote when we have one — instead of a blank turn
+        // that reads as a lost message.
         if (!assistantText.trim() && proposalIds.length === 0) {
-          const note = "Sorry — I couldn't put a response together just then. Mind trying again?";
+          const note =
+            failNote || "Sorry — I couldn't put a response together just then. Mind trying again?";
           assistantText = note;
           send('delta', { text: note });
         }
