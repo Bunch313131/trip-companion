@@ -134,10 +134,15 @@ export default function ChatPage() {
           const dataLine = chunk.split('\n').find((l) => l.startsWith('data:'));
           if (!evLine || !dataLine) continue;
           const event = evLine.slice(6).trim();
-          const data = JSON.parse(dataLine.slice(5).trim());
+          let data: { text?: string; effort?: string; message?: string };
+          try {
+            data = JSON.parse(dataLine.slice(5).trim());
+          } catch {
+            continue; // skip a malformed/partial chunk rather than dropping the whole reply
+          }
           if (event === 'delta') {
-            finalText += data.text;
-            setStreamingText((t) => t + data.text);
+            finalText += data.text ?? '';
+            setStreamingText((t) => t + (data.text ?? ''));
           } else if (event === 'mode') setDeepMode(data.effort === 'deep');
           else if (event === 'error') throw new Error(data.message);
           // 'proposal' + 'done': the docs arrive via onSnapshot
