@@ -74,12 +74,15 @@ export function Avatar({ initial, color }: { initial: string; color: string }) {
   );
 }
 
-/** Live streaming assistant bubble (before the message is persisted). */
-export function StreamingMessage({ text }: { text: string }) {
+/** Streaming assistant bubble. Shows a blinking caret while live; the caret is
+ *  dropped once the answer is complete but its persisted copy hasn't arrived. */
+export function StreamingMessage({ text, showCaret = true }: { text: string; showCaret?: boolean }) {
   return (
     <div className="prose-chat max-w-none text-sm leading-relaxed text-text">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
-      <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-primary align-middle" />
+      {showCaret && (
+        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-primary align-middle" />
+      )}
     </div>
   );
 }

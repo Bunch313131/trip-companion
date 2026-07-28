@@ -54,6 +54,11 @@ export default function ChatPage() {
   const [streamingText, setStreamingText] = useState('');
   const [deepMode, setDeepMode] = useState(false);
   const [optimisticUser, setOptimisticUser] = useState<string | null>(null);
+  // The finished answer, kept on screen until its persisted copy arrives over
+  // Firestore's realtime listener. The stream (SSE) and the saved doc are two
+  // separate channels; without this bridge the answer vanishes in the gap
+  // between the stream closing and the doc landing — worse on flaky networks.
+  const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const keyboardOpen = useKeyboardOpen();
 
@@ -63,12 +68,21 @@ export default function ChatPage() {
   // Auto-scroll to the newest content.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages.length, streamingText, optimisticUser]);
+  }, [messages.length, streamingText, optimisticUser, pendingAnswer]);
 
   // Hide the optimistic user bubble once its persisted copy arrives.
   const showOptimistic =
     optimisticUser !== null &&
     !messages.some((m) => m.role === 'user' && m.content === optimisticUser);
+
+  // Keep the streamed answer visible until the saved assistant message shows up.
+  const answerPersisted =
+    pendingAnswer !== null &&
+    messages.some((m) => m.role === 'assistant' && m.content === pendingAnswer);
+  const showPendingAnswer = pendingAnswer !== null && !answerPersisted;
+  useEffect(() => {
+    if (answerPersisted) setPendingAnswer(null);
+  }, [answerPersisted]);
 
   async function sendMessage(text: string) {
     if (!tripId || !user) return;
@@ -91,6 +105,7 @@ export default function ChatPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let finalText = '';
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -103,12 +118,16 @@ export default function ChatPage() {
           if (!evLine || !dataLine) continue;
           const event = evLine.slice(6).trim();
           const data = JSON.parse(dataLine.slice(5).trim());
-          if (event === 'delta') setStreamingText((t) => t + data.text);
-          else if (event === 'mode') setDeepMode(data.effort === 'deep');
+          if (event === 'delta') {
+            finalText += data.text;
+            setStreamingText((t) => t + data.text);
+          } else if (event === 'mode') setDeepMode(data.effort === 'deep');
           else if (event === 'error') throw new Error(data.message);
           // 'proposal' + 'done': the docs arrive via onSnapshot
         }
       }
+      // Bridge the finished answer until its persisted copy arrives (below).
+      if (finalText.trim()) setPendingAnswer(finalText);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -119,7 +138,8 @@ export default function ChatPage() {
     }
   }
 
-  const empty = messages.length === 0 && !streaming && !optimisticUser;
+  const empty =
+    messages.length === 0 && !streaming && !optimisticUser && !showPendingAnswer;
 
   return (
     <>
@@ -178,6 +198,9 @@ export default function ChatPage() {
                       {deepMode && <span>Thinking it through…</span>}
                     </div>
                   ))}
+                {!streaming && showPendingAnswer && (
+                  <StreamingMessage text={pendingAnswer!} showCaret={false} />
+                )}
               </>
             )}
           </div>
