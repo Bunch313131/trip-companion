@@ -11,6 +11,7 @@ import { useKeyboardOpen } from '@/lib/use-keyboard';
 import { useTripCollection, orderBy } from '@/lib/use-collection';
 import { getTripPhase } from '@/lib/constants';
 import { avatarColor, initialOf } from '@/lib/avatar';
+import { downscaleImage } from '@/lib/downscale-image';
 import type { ChatMessageDoc, ProposalDoc, WithId } from '@/types/domain';
 
 type MemberLite = { role?: string; email?: string | null; displayName?: string | null };
@@ -98,10 +99,13 @@ export default function ChatPage() {
       // With a photo we post multipart; text-only keeps the original JSON path.
       let res: Response;
       if (image) {
+        // Shrink the photo before upload so it sends fast and doesn't blow the
+        // server's time budget (and converts HEIC → JPEG along the way).
+        const toSend = await downscaleImage(image);
         const fd = new FormData();
         fd.append('tripId', tripId);
         fd.append('message', text);
-        fd.append('image', image);
+        fd.append('image', toSend);
         res = await fetch('/api/chat', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
