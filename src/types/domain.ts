@@ -177,6 +177,9 @@ export type ChatMessageDoc = {
   content: string;
   citations?: Array<{ title?: string; url: string }> | null;
   proposalIds?: string[] | null;
+  // Optional photo the user attached to this message (stored in Storage).
+  imageUrl?: string | null;
+  imageMime?: string | null;
   createdAt?: Timestamp;
 };
 
