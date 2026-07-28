@@ -45,7 +45,30 @@ export async function POST(
         throw new Error('Proposal is no longer pending');
       }
 
-      for (const op of proposal.operations as ProposalOperation[]) {
+      const ops = proposal.operations as ProposalOperation[];
+
+      // Firestore requires all reads before writes inside a transaction.
+      // Pre-read every update/delete target up front so a missing record fails
+      // with a clear message instead of tx.update throwing a raw Firestore
+      // "no document to update" error — that raw error (the full document path)
+      // is what leaked into the chat UI.
+      const targets = ops.filter(
+        (op): op is Extract<ProposalOperation, { op: 'update' | 'delete' }> =>
+          op.op === 'update' || op.op === 'delete'
+      );
+      const targetSnaps = await Promise.all(
+        targets.map((op) => tx.get(db.collection(`trips/${tripId}/${op.entity}`).doc(op.id)))
+      );
+      const missingIdx = targetSnaps.findIndex((s) => !s.exists);
+      if (missingIdx !== -1) {
+        const m = targets[missingIdx];
+        throw new Error(
+          `Couldn't apply this change — the ${m.entity.replace(/s$/, '')} it updates no longer exists. ` +
+            `It may have been edited or removed since the suggestion was made; ask the companion to try again.`
+        );
+      }
+
+      for (const op of ops) {
         const coll = db.collection(`trips/${tripId}/${op.entity}`);
         if (op.op === 'create') {
           tx.set(coll.doc(), {
