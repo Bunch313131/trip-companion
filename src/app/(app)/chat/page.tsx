@@ -181,7 +181,7 @@ export default function ChatPage() {
           bottom: keyboardOpen ? '0px' : 'calc(3rem + env(safe-area-inset-bottom))',
         }}
       >
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-4 py-4">
           <div className="mx-auto w-full max-w-lg space-y-4">
             {empty ? (
               <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
